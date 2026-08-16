@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fronteira de Decisão</title>
+<meta name="description" content="Material didático interativo sobre a fronteira de decisão em classificadores lineares (caso 2D) — Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<style>
+  :root {
+    --ink: #121821;
+    --ink-soft: #4B5866;
+    --ink-faint: #7C8894;
+    --paper: #F2F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9ECEC;
+    --line: #D6DBDC;
+    --line-strong: #B9C1C2;
+    --boundary: #B23A2E;
+    --vector: #2451C4;
+    --dimension: #A66A16;
+    --measure: #1E7F72;
+    --wash: rgba(36, 81, 196, 0.05);
+    --chip-pos-border: #A9C0EA;
+    --chip-neg-border: #E4B2AC;
+
+    --if-green: #3F9C42;
+    --if-red: #CC181F;
+    --brand-plate: #FFFFFF;
+
+    --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-math: "Sitka Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: Corbel, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #E7ECF1;
+      --ink-soft: #A9B4C0;
+      --ink-faint: #74818F;
+      --paper: #0D131C;
+      --surface: #151D29;
+      --surface-2: #1B2431;
+      --line: #29323F;
+      --line-strong: #37424F;
+      --boundary: #E2685A;
+      --vector: #7DA1FF;
+      --dimension: #E8A33D;
+      --measure: #4FD9C4;
+      --wash: rgba(125, 161, 255, 0.1);
+      --chip-pos-border: #3E5488;
+      --chip-neg-border: #74423B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E7ECF1;
+    --ink-soft: #A9B4C0;
+    --ink-faint: #74818F;
+    --paper: #0D131C;
+    --surface: #151D29;
+    --surface-2: #1B2431;
+    --line: #29323F;
+    --line-strong: #37424F;
+    --boundary: #E2685A;
+    --vector: #7DA1FF;
+    --dimension: #E8A33D;
+    --measure: #4FD9C4;
+    --wash: rgba(125, 161, 255, 0.1);
+    --chip-pos-border: #3E5488;
+    --chip-neg-border: #74423B;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-plate {
+    background: var(--brand-plate);
+    border-radius: 6px;
+    padding: 0.3rem;
+    display: flex;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .if-mark { width: 2.3rem; height: auto; display: block; }
+
+  .brand-word .if-name {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .brand-word .if-sub {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    color: var(--ink-soft);
+  }
+
+  .course-id { text-align: right; }
+
+  .masthead .course {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .masthead .prof {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    font-family: var(--font-math);
+    margin-top: 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .course-id { text-align: left; }
+  }
+
+  main.page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 4rem;
+  }
+
+  .hero {
+    max-width: 46rem;
+    margin-bottom: 2.75rem;
+  }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dimension);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.1;
+    margin: 0 0 0.85rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    max-width: 42rem;
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.25rem);
+    align-items: start;
+  }
+
+  @media (max-width: 880px) {
+    .workspace { grid-template-columns: 1fr; }
+    .rail-figure { position: static !important; order: -1; margin-bottom: 2rem; }
+  }
+
+  .rail-figure {
+    position: sticky;
+    top: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1.1rem 1.1rem 1.35rem;
+  }
+
+  .rail-figure figcaption {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 0.6rem;
+    line-height: 1.5;
+  }
+
+  svg.plot {
+    width: 100%;
+    height: auto;
+    display: block;
+    touch-action: none;
+  }
+
+  .plot-point {
+    cursor: grab;
+  }
+  .plot-point:active { cursor: grabbing; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+  }
+
+  .legend li { display: flex; align-items: center; gap: 0.4em; }
+  .legend .swatch { width: 1.1em; height: 0.2em; border-radius: 2px; flex: none; }
+  .legend .swatch.dot { width: 0.6em; height: 0.6em; border-radius: 50%; }
+  .legend .swatch.dashed { background: none; border-top: 2px dashed currentColor; height: 0; }
+
+  .controls {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .controls label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.35rem;
+  }
+
+  .controls label .val {
+    font-family: var(--font-mono);
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--vector);
+  }
+
+  .readout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.95rem;
+  }
+
+  .chip {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .chip .k {
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .chip .v {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.15rem;
+  }
+
+  .chip.sign-pos { border-color: var(--chip-pos-border); }
+  .chip.sign-neg { border-color: var(--chip-neg-border); }
+
+  .derivation section { margin-bottom: 2.4rem; }
+  .derivation h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.65rem;
+    margin: 0 0 0.7rem;
+    text-wrap: balance;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.7rem;
+  }
+  .section-head h2 { margin-bottom: 0; }
+
+  .reveal-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+  }
+  .reveal-toggle[aria-pressed="true"] {
+    background: var(--wash);
+    border-color: var(--dimension);
+    color: var(--dimension);
+  }
+  .reveal-icon { font-size: 1rem; line-height: 1; }
+
+  .answer-mask {
+    display: inline-block;
+    min-width: 1.4em;
+    text-align: center;
+    padding: 0 0.3em;
+    border-bottom: 2px dashed var(--line-strong);
+    color: var(--ink-faint);
+    font-style: normal;
+  }
+  .answer-mask.block {
+    min-width: 4.5em;
+    padding: 0.1em 0.5em;
+  }
+
+  .derivation p { max-width: 40rem; }
+  .derivation p + p { margin-top: 0.85rem; }
+
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--vector);
+    border-radius: 3px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .formula {
+    font-family: var(--font-math);
+    font-style: italic;
+    font-size: 1.35rem;
+    white-space: nowrap;
+  }
+
+  .formula .rm { font-style: normal; }
+  .formula .vecw { color: var(--vector); font-weight: 700; }
+  .formula .vecx { font-weight: 700; }
+  .formula .varb { color: var(--dimension); }
+  .formula .dist { color: var(--measure); }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    margin: 0 0.2em;
+    line-height: 1.15;
+  }
+  .frac .num { padding: 0 0.2em 0.1em; border-bottom: 1.4px solid currentColor; }
+  .frac .den { padding: 0.12em 0.2em 0; }
+
+  .sqrt { position: relative; padding: 0 0.35em 0 1em; display: inline-block; }
+  .sqrt::before {
+    content: "\221A";
+    position: absolute;
+    left: 0;
+    top: -0.02em;
+    font-size: 1.05em;
+  }
+  .sqrt .radicand { border-top: 1.4px solid currentColor; padding: 0.06em 0.1em 0 0; }
+
+  .step-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+  }
+
+  .step-list > li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.7rem 0 0.7rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .step-list > li:last-child { border-bottom: none; }
+
+  .step-list > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.65rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .step-list .label {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.3rem;
+  }
+
+  .callout {
+    background: var(--wash);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--dimension);
+    border-radius: 3px;
+    padding: 1rem 1.2rem;
+  }
+  .callout h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--dimension);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-family: var(--font-body);
+  }
+
+  .sign-note {
+    font-family: var(--font-mono);
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+
+  footer.closing {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    max-width: 40rem;
+  }
+  footer.closing strong { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-plate">
+      <svg class="if-mark" viewBox="0 0 114 154" role="img" aria-label="Instituto Federal do Espírito Santo">
+        <circle cx="17" cy="17" r="17" fill="#CC181F"></circle>
+        <rect x="40" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+      </svg>
+    </div>
+    <div class="brand-word">
+      <div class="if-name">INSTITUTO FEDERAL</div>
+      <div class="if-sub">Espírito Santo</div>
+      <div class="if-sub">Campus Serra</div>
+    </div>
+  </div>
+  <div class="course-id">
+    <div class="course">Aprendizado Profundo para Reconhecimento Visual</div>
+    <div class="prof">Prof. Thiago M. Paixão</div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="hero">
+    <div class="eyebrow">Classificadores lineares</div>
+    <h1>Fronteira de decisão</h1>
+    <p class="lede">
+      Todo classificador linear começa com uma pergunta simples: dado um ponto <em>x</em>,
+      de que lado de uma reta ele está? Nesta página construímos essa ideia do zero, em 2D,
+      calculando à mão cada passo — e arrastando o ponto para ver a geometria responder.
+    </p>
+  </div>
+
+  <div class="workspace">
+    <figure class="rail-figure">
+      <svg class="plot" viewBox="0 0 560 560" role="img"
+           aria-label="Plano cartesiano com a reta de fronteira 3x1 + 4x2 + b = 0, o vetor peso w partindo da origem, e um ponto arrastável x-linha cuja pontuação e distância até a fronteira são recalculadas em tempo real.">
+        <g id="grid"></g>
+        <g id="axes"></g>
+        <line id="boundaryLine" x1="0" y1="0" x2="0" y2="0" stroke="var(--boundary)" stroke-width="4"></line>
+        <text id="boundaryLabel" font-family="var(--font-math)" font-style="italic" font-size="16" fill="var(--boundary)"></text>
+
+        <line id="dimOrigin" stroke="var(--dimension)" stroke-width="2.5" stroke-dasharray="7 5"></line>
+        <circle id="footOrigin" r="4" fill="var(--dimension)"></circle>
+        <text id="dimOriginLabel" font-family="var(--font-mono)" font-weight="700" font-size="15" fill="var(--dimension)"></text>
+
+        <line id="dimPoint" stroke="var(--measure)" stroke-width="2.5" stroke-dasharray="7 5"></line>
+        <circle id="footPoint" r="4" fill="var(--measure)"></circle>
+        <text id="dimPointLabel" font-family="var(--font-mono)" font-weight="700" font-size="15" fill="var(--measure)"></text>
+
+        <defs>
+          <marker id="arrowW" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--vector)"></path>
+          </marker>
+        </defs>
+        <line id="vecW" x1="0" y1="0" x2="0" y2="0" stroke="var(--vector)" stroke-width="4.5" marker-end="url(#arrowW)"></line>
+        <text id="vecWLabel" font-family="var(--font-math)" font-style="italic" font-weight="700" font-size="18" fill="var(--vector)">w</text>
+
+        <circle id="pointX" class="plot-point" r="10" fill="var(--paper)" stroke="var(--ink)" stroke-width="3.5"></circle>
+        <text id="pointXLabel" font-family="var(--font-mono)" font-weight="700" font-size="15" fill="var(--ink)"></text>
+      </svg>
+      <figcaption>Arraste o ponto <em>x′</em> pelo plano. O painel de cálculo ao lado atualiza em tempo real.</figcaption>
+
+      <ul class="legend">
+        <li><span class="swatch" style="background:var(--boundary)"></span> fronteira (z = 0)</li>
+        <li><span class="swatch" style="background:var(--vector)"></span> vetor <em>w</em></li>
+        <li><span class="swatch dashed" style="color:var(--dimension)"></span> distância da origem</li>
+        <li><span class="swatch dashed" style="color:var(--measure)"></span> distância de <em>x′</em></li>
+      </ul>
+
+      <div class="controls">
+        <label for="bSlider">Deslocar a fronteira — <span class="rm">b</span> <span class="val" id="bVal">-12</span></label>
+        <input type="range" id="bSlider" min="-20" max="0" step="1" value="-12">
+      </div>
+
+      <div class="readout">
+        <div class="chip"><div class="k">x′</div><div class="v" id="chipX">(5.00, 5.00)</div></div>
+        <div class="chip" id="chipZWrap"><div class="k">z = w·x′ + b</div><div class="v" id="chipZ">?</div></div>
+        <div class="chip"><div class="k">‖w‖</div><div class="v" id="chipNorm">5.00</div></div>
+        <div class="chip"><div class="k">distância de x′</div><div class="v" id="chipDist">?</div></div>
+      </div>
+    </figure>
+
+    <div class="derivation">
+      <section>
+        <h2>A pontuação de um ponto</h2>
+        <p>
+          Fixe um vetor de pesos <span class="formula" style="font-size:1rem"><span class="vecw">w</span></span>
+          e um viés <span class="formula" style="font-size:1rem"><span class="varb">b</span></span>. Para qualquer
+          ponto <span class="formula" style="font-size:1rem"><span class="vecx">x</span></span> do plano, a
+          <strong>pontuação</strong> é o número:
+        </p>
+        <div class="formula-block">
+          <span class="formula">
+            <span class="rm">z</span> =
+            <span class="vecw">w</span><span class="rm">·</span><span class="vecx">x</span> + <span class="varb">b</span>
+            <span class="rm"> = </span>
+            <span class="vecw">w</span><sub>1</sub><span class="vecx">x</span><sub>1</sub>
+            <span class="rm"> + </span>
+            <span class="vecw">w</span><sub>2</sub><span class="vecx">x</span><sub>2</sub>
+            <span class="rm"> + </span><span class="varb">b</span>
+          </span>
+        </div>
+        <p>
+          Nesta página, <span class="formula" style="font-size:1rem"><span class="vecw">w</span> = (3, 4)</span> fica fixo
+          e você controla <span class="formula" style="font-size:1rem"><span class="varb">b</span></span> pelo controle
+          deslizante ao lado. O sinal de <em>z</em> diz de que lado da reta o ponto está:
+        </p>
+        <p class="sign-note" id="signNote"></p>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Calculando à mão</h2>
+          <button type="button" id="revealBtn" class="reveal-toggle" aria-pressed="false">
+            <span class="reveal-icon">👁</span><span class="reveal-text">Mostrar resultados</span>
+          </button>
+        </div>
+        <p>Para o ponto <em>x′</em> que você está arrastando no gráfico, resolva no papel e depois confira:</p>
+        <ol class="step-list">
+          <li>
+            <div class="label">Produto escalar <span class="formula" style="font-size:0.95rem"><span class="vecw">w</span>·<span class="vecx">x′</span></span></div>
+            <div class="formula" id="stepDot"></div>
+          </li>
+          <li>
+            <div class="label">Pontuação <span class="formula" style="font-size:0.95rem">z = <span class="vecw">w</span>·<span class="vecx">x′</span> + <span class="varb">b</span></span></div>
+            <div class="formula" id="stepZ"></div>
+          </li>
+          <li>
+            <div class="label">Norma do vetor peso <span class="formula" style="font-size:0.95rem">‖<span class="vecw">w</span>‖</span></div>
+            <div class="formula" id="stepNorm"></div>
+          </li>
+          <li>
+            <div class="label">Distância de <em>x′</em> até a fronteira <span class="formula" style="font-size:0.95rem" >= z / ‖<span class="vecw">w</span>‖</span></div>
+            <div class="formula" id="stepDist"></div>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <div class="callout">
+          <h3>Distância da origem até a fronteira</h3>
+          <p style="margin:0 0 0.6rem">
+            Fazendo <span class="formula" style="font-size:1rem"><span class="vecx">x</span> = 0</span> na fórmula da
+            distância, os termos com <em>w</em> desaparecem e sobra apenas:
+          </p>
+          <div class="formula" id="stepOrigin"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="closing">
+    <strong>Para lembrar.</strong> A pontuação <em>z = w·x + b</em> mede, a menos do fator <em>1/‖w‖</em>,
+    a distância com sinal de um ponto até a fronteira de decisão. Esse é o mecanismo por trás de todo
+    classificador linear — do perceptron às camadas de uma rede neural.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var W1 = 3, W2 = 4;
+  var RANGE = { xmin: -2, xmax: 9, ymin: -2, ymax: 9 };
+  var SVG_SIZE = 560;
+  var PAD = { l: 46, r: 20, t: 20, b: 34 };
+
+  var plotW = SVG_SIZE - PAD.l - PAD.r;
+  var plotH = SVG_SIZE - PAD.t - PAD.b;
+  var scale = Math.min(plotW / (RANGE.xmax - RANGE.xmin), plotH / (RANGE.ymax - RANGE.ymin));
+  var left0 = PAD.l + (plotW - scale * (RANGE.xmax - RANGE.xmin)) / 2;
+  var top0 = PAD.t + (plotH - scale * (RANGE.ymax - RANGE.ymin)) / 2;
+
+  function toSvg(x1, x2) {
+    return [
+      left0 + (x1 - RANGE.xmin) * scale,
+      top0 + (RANGE.ymax - x2) * scale
+    ];
+  }
+  function toMath(sx, sy) {
+    return [
+      RANGE.xmin + (sx - left0) / scale,
+      RANGE.ymax - (sy - top0) / scale
+    ];
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function dot(a1, a2, b1, b2) { return a1 * b1 + a2 * b2; }
+  function score(x1, x2, b) { return W1 * x1 + W2 * x2 + b; }
+  function wnorm() { return Math.sqrt(W1 * W1 + W2 * W2); }
+
+  function footOfPerp(x1, x2, b) {
+    var s = score(x1, x2, b);
+    var n2 = W1 * W1 + W2 * W2;
+    var t = s / n2;
+    return [x1 - t * W1, x2 - t * W2];
+  }
+
+  function clipLine(b) {
+    var pts = [];
+    function tryX1(x1) {
+      var x2 = (-b - W1 * x1) / W2;
+      if (x2 >= RANGE.ymin - 1e-9 && x2 <= RANGE.ymax + 1e-9) pts.push([x1, x2]);
+    }
+    function tryX2(x2) {
+      var x1 = (-b - W2 * x2) / W1;
+      if (x1 >= RANGE.xmin - 1e-9 && x1 <= RANGE.xmax + 1e-9) pts.push([x1, x2]);
+    }
+    tryX1(RANGE.xmin); tryX1(RANGE.xmax); tryX2(RANGE.ymin); tryX2(RANGE.ymax);
+    var uniq = [];
+    pts.forEach(function (p) {
+      if (!uniq.some(function (q) { return Math.hypot(q[0] - p[0], q[1] - p[1]) < 1e-6; })) uniq.push(p);
+    });
+    return uniq.slice(0, 2);
+  }
+
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  var gridG = document.getElementById("grid");
+  var axesG = document.getElementById("axes");
+
+  for (var i = RANGE.xmin; i <= RANGE.xmax; i++) {
+    var p1 = toSvg(i, RANGE.ymin), p2 = toSvg(i, RANGE.ymax);
+    gridG.appendChild(el("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: "var(--line)", "stroke-width": 1 }));
+  }
+  for (var j = RANGE.ymin; j <= RANGE.ymax; j++) {
+    var q1 = toSvg(RANGE.xmin, j), q2 = toSvg(RANGE.xmax, j);
+    gridG.appendChild(el("line", { x1: q1[0], y1: q1[1], x2: q2[0], y2: q2[1], stroke: "var(--line)", "stroke-width": 1 }));
+  }
+
+  var ax1 = toSvg(RANGE.xmin, 0), ax2 = toSvg(RANGE.xmax, 0);
+  var ay1 = toSvg(0, RANGE.ymin), ay2 = toSvg(0, RANGE.ymax);
+  axesG.appendChild(el("line", { x1: ax1[0], y1: ax1[1], x2: ax2[0], y2: ax2[1], stroke: "var(--line-strong)", "stroke-width": 2 }));
+  axesG.appendChild(el("line", { x1: ay1[0], y1: ay1[1], x2: ay2[0], y2: ay2[1], stroke: "var(--line-strong)", "stroke-width": 2 }));
+  var o0 = toSvg(0, 0);
+  axesG.appendChild(el("circle", { cx: o0[0], cy: o0[1], r: 3, fill: "var(--line-strong)" }));
+  var labelX1 = toSvg(RANGE.xmax - 0.3, 0);
+  var labelX2 = toSvg(0, RANGE.ymax - 0.3);
+  var lt1 = el("text", { x: labelX1[0], y: labelX1[1] - 10, "font-family": "var(--font-math)", "font-style": "italic", "font-size": 16, fill: "var(--ink-faint)" });
+  lt1.textContent = "x₁";
+  axesG.appendChild(lt1);
+  var lt2 = el("text", { x: labelX2[0] + 10, y: labelX2[1] + 5, "font-family": "var(--font-math)", "font-style": "italic", "font-size": 16, fill: "var(--ink-faint)" });
+  lt2.textContent = "x₂";
+  axesG.appendChild(lt2);
+
+  var boundaryLine = document.getElementById("boundaryLine");
+  var boundaryLabel = document.getElementById("boundaryLabel");
+  var vecW = document.getElementById("vecW");
+  var vecWLabel = document.getElementById("vecWLabel");
+  var pointX = document.getElementById("pointX");
+  var pointXLabel = document.getElementById("pointXLabel");
+  var dimOrigin = document.getElementById("dimOrigin");
+  var footOrigin = document.getElementById("footOrigin");
+  var dimOriginLabel = document.getElementById("dimOriginLabel");
+  var dimPoint = document.getElementById("dimPoint");
+  var footPoint = document.getElementById("footPoint");
+  var dimPointLabel = document.getElementById("dimPointLabel");
+
+  var bSlider = document.getElementById("bSlider");
+  var bVal = document.getElementById("bVal");
+
+  var state = { x1: 5, x2: 5, b: -12, revealed: false };
+
+  function fmt(n) { return n.toFixed(2); }
+  function answer(text) {
+    return state.revealed ? text : "<span class=\"answer-mask\">?</span>";
+  }
+  function stepBlock(html) {
+    return state.revealed ? html : "<span class=\"answer-mask block\">?</span>";
+  }
+
+  function render() {
+    var b = state.b;
+    var pts = clipLine(b);
+    if (pts.length === 2) {
+      var s1 = toSvg(pts[0][0], pts[0][1]);
+      var s2 = toSvg(pts[1][0], pts[1][1]);
+      boundaryLine.setAttribute("x1", s1[0]); boundaryLine.setAttribute("y1", s1[1]);
+      boundaryLine.setAttribute("x2", s2[0]); boundaryLine.setAttribute("y2", s2[1]);
+      var mid = toSvg((pts[0][0] + pts[1][0]) / 2 * 0.35 + pts[1][0] * 0.65, (pts[0][1] + pts[1][1]) / 2 * 0.35 + pts[1][1] * 0.65);
+      boundaryLabel.setAttribute("x", s2[0] - 70);
+      boundaryLabel.setAttribute("y", s2[1] - 8);
+      boundaryLabel.textContent = "w·x + b = 0";
+    }
+
+    var wTip = toSvg(W1 * 0.9, W2 * 0.9);
+    var wOrigin = toSvg(0, 0);
+    vecW.setAttribute("x1", wOrigin[0]); vecW.setAttribute("y1", wOrigin[1]);
+    vecW.setAttribute("x2", wTip[0]); vecW.setAttribute("y2", wTip[1]);
+    vecWLabel.setAttribute("x", wTip[0] + 6);
+    vecWLabel.setAttribute("y", wTip[1] - 6);
+
+    var footO = footOfPerp(0, 0, b);
+    var sO = toSvg(0, 0), fO = toSvg(footO[0], footO[1]);
+    dimOrigin.setAttribute("x1", sO[0]); dimOrigin.setAttribute("y1", sO[1]);
+    dimOrigin.setAttribute("x2", fO[0]); dimOrigin.setAttribute("y2", fO[1]);
+    footOrigin.setAttribute("cx", fO[0]); footOrigin.setAttribute("cy", fO[1]);
+    var distOrigin = Math.abs(b) / wnorm();
+    var midO = [(sO[0] + fO[0]) / 2, (sO[1] + fO[1]) / 2];
+    dimOriginLabel.setAttribute("x", midO[0] + 8);
+    dimOriginLabel.setAttribute("y", midO[1] - 6);
+    dimOriginLabel.textContent = fmt(distOrigin);
+
+    var z = score(state.x1, state.x2, b);
+    var footP = footOfPerp(state.x1, state.x2, b);
+    var sP = toSvg(state.x1, state.x2), fP = toSvg(footP[0], footP[1]);
+    dimPoint.setAttribute("x1", sP[0]); dimPoint.setAttribute("y1", sP[1]);
+    dimPoint.setAttribute("x2", fP[0]); dimPoint.setAttribute("y2", fP[1]);
+    footPoint.setAttribute("cx", fP[0]); footPoint.setAttribute("cy", fP[1]);
+    var distPoint = z / wnorm();
+    var midP = [(sP[0] + fP[0]) / 2, (sP[1] + fP[1]) / 2];
+    dimPointLabel.setAttribute("x", midP[0] + 8);
+    dimPointLabel.setAttribute("y", midP[1] + 14);
+    dimPointLabel.textContent = fmt(Math.abs(distPoint));
+
+    pointX.setAttribute("cx", sP[0]); pointX.setAttribute("cy", sP[1]);
+    pointXLabel.setAttribute("x", sP[0] + 12); pointXLabel.setAttribute("y", sP[1] - 10);
+    pointXLabel.textContent = "x′ = (" + fmt(state.x1) + ", " + fmt(state.x2) + ")";
+
+    bVal.textContent = b;
+    document.getElementById("chipX").textContent = "(" + fmt(state.x1) + ", " + fmt(state.x2) + ")";
+    document.getElementById("chipZ").innerHTML = answer(fmt(z));
+    document.getElementById("chipNorm").innerHTML = answer(fmt(wnorm()));
+    document.getElementById("chipDist").innerHTML = answer(fmt(distPoint));
+
+    var chipZWrap = document.getElementById("chipZWrap");
+    chipZWrap.classList.toggle("sign-pos", state.revealed && z > 0);
+    chipZWrap.classList.toggle("sign-neg", state.revealed && z < 0);
+
+    var signNote = document.getElementById("signNote");
+    if (!state.revealed) {
+      signNote.innerHTML = "Calcule <span class=\"rm\">z</span> acima e clique em “Mostrar resultados” para descobrir de que lado x′ está.";
+      signNote.style.color = "var(--ink-faint)";
+    } else if (Math.abs(z) < 1e-6) {
+      signNote.textContent = "z = 0  →  o ponto está exatamente sobre a fronteira.";
+      signNote.style.color = "var(--ink-soft)";
+    } else if (z > 0) {
+      signNote.textContent = "z > 0  →  o ponto está do lado para onde w aponta.";
+      signNote.style.color = "var(--vector)";
+    } else {
+      signNote.textContent = "z < 0  →  o ponto está do lado oposto a w.";
+      signNote.style.color = "var(--boundary)";
+    }
+
+    var dot_ = dot(W1, W2, state.x1, state.x2);
+    document.getElementById("stepDot").innerHTML = stepBlock(
+      "<span class=\"rm\">" + W1 + "(" + fmt(state.x1) + ") + " + W2 + "(" + fmt(state.x2) + ") = " + fmt(dot_) + "</span>"
+    );
+
+    document.getElementById("stepZ").innerHTML = stepBlock(
+      "<span class=\"rm\">" + fmt(dot_) + " + (" + b + ") = <strong>" + fmt(z) + "</strong></span>"
+    );
+
+    document.getElementById("stepNorm").innerHTML = stepBlock(
+      "<span class=\"sqrt\"><span class=\"radicand rm\">" + W1 + "² + " + W2 + "²</span></span>" +
+      "<span class=\"rm\"> = </span><span class=\"sqrt\"><span class=\"radicand rm\">" + (W1 * W1 + W2 * W2) + "</span></span>" +
+      "<span class=\"rm\"> = " + fmt(wnorm()) + "</span>"
+    );
+
+    document.getElementById("stepDist").innerHTML = stepBlock(
+      "<span class=\"frac\"><span class=\"num rm\">" + fmt(z) + "</span><span class=\"den rm\">" + fmt(wnorm()) + "</span></span>" +
+      "<span class=\"rm\"> = <strong class=\"dist\">" + fmt(distPoint) + "</strong></span>"
+    );
+
+    document.getElementById("stepOrigin").innerHTML = stepBlock(
+      "<span class=\"frac\"><span class=\"num rm\">|" + b + "|</span><span class=\"den rm\">" + fmt(wnorm()) + "</span></span>" +
+      "<span class=\"rm\"> = <strong>" + fmt(distOrigin) + "</strong></span>"
+    );
+  }
+
+  bSlider.addEventListener("input", function () {
+    state.b = parseFloat(bSlider.value);
+    render();
+  });
+
+  var revealBtn = document.getElementById("revealBtn");
+  var revealText = revealBtn.querySelector(".reveal-text");
+  revealBtn.addEventListener("click", function () {
+    state.revealed = !state.revealed;
+    revealBtn.setAttribute("aria-pressed", state.revealed ? "true" : "false");
+    revealText.textContent = state.revealed ? "Ocultar resultados" : "Mostrar resultados";
+    render();
+  });
+
+  var svgEl = document.querySelector("svg.plot");
+  var dragging = false;
+
+  function pointerToMath(evt) {
+    var rect = svgEl.getBoundingClientRect();
+    var viewScale = SVG_SIZE / rect.width;
+    var sx = (evt.clientX - rect.left) * viewScale;
+    var sy = (evt.clientY - rect.top) * viewScale;
+    return toMath(sx, sy);
+  }
+
+  pointX.addEventListener("pointerdown", function (evt) {
+    dragging = true;
+    pointX.setPointerCapture(evt.pointerId);
+  });
+  pointX.addEventListener("pointermove", function (evt) {
+    if (!dragging) return;
+    var m = pointerToMath(evt);
+    state.x1 = clamp(m[0], RANGE.xmin, RANGE.xmax);
+    state.x2 = clamp(m[1], RANGE.ymin, RANGE.ymax);
+    render();
+  });
+  pointX.addEventListener("pointerup", function () { dragging = false; });
+  pointX.addEventListener("pointercancel", function () { dragging = false; });
+
+  render();
+})();
+</script>
+</body>
+</html>
