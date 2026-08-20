@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Produto Escalar</title>
+<meta name="description" content="Material didático interativo sobre produto escalar, norma, projeção e similaridade de cosseno — Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<style>
+  :root {
+    --ink: #121821;
+    --ink-soft: #4B5866;
+    --ink-faint: #7C8894;
+    --paper: #F2F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9ECEC;
+    --line: #D6DBDC;
+    --line-strong: #B9C1C2;
+    --boundary: #B23A2E;
+    --vector: #2451C4;
+    --dimension: #A66A16;
+    --measure: #1E7F72;
+    --wash: rgba(36, 81, 196, 0.05);
+    --chip-pos-border: #A9C0EA;
+    --chip-neg-border: #E4B2AC;
+
+    --if-green: #3F9C42;
+    --if-red: #CC181F;
+    --brand-plate: #FFFFFF;
+
+    --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-math: "Sitka Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: Corbel, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #E7ECF1;
+      --ink-soft: #A9B4C0;
+      --ink-faint: #74818F;
+      --paper: #0D131C;
+      --surface: #151D29;
+      --surface-2: #1B2431;
+      --line: #29323F;
+      --line-strong: #37424F;
+      --boundary: #E2685A;
+      --vector: #7DA1FF;
+      --dimension: #E8A33D;
+      --measure: #4FD9C4;
+      --wash: rgba(125, 161, 255, 0.1);
+      --chip-pos-border: #3E5488;
+      --chip-neg-border: #74423B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E7ECF1;
+    --ink-soft: #A9B4C0;
+    --ink-faint: #74818F;
+    --paper: #0D131C;
+    --surface: #151D29;
+    --surface-2: #1B2431;
+    --line: #29323F;
+    --line-strong: #37424F;
+    --boundary: #E2685A;
+    --vector: #7DA1FF;
+    --dimension: #E8A33D;
+    --measure: #4FD9C4;
+    --wash: rgba(125, 161, 255, 0.1);
+    --chip-pos-border: #3E5488;
+    --chip-neg-border: #74423B;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-plate {
+    background: var(--brand-plate);
+    border-radius: 6px;
+    padding: 0.3rem;
+    display: flex;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .if-mark { width: 2.3rem; height: auto; display: block; }
+
+  .brand-word .if-name {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .brand-word .if-sub {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    color: var(--ink-soft);
+  }
+
+  .course-id { text-align: right; }
+
+  .masthead .course {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .masthead .prof {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    font-family: var(--font-math);
+    margin-top: 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .course-id { text-align: left; }
+  }
+
+  main.page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 4rem;
+  }
+
+  .hero {
+    max-width: 46rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dimension);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.1;
+    margin: 0 0 0.85rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    max-width: 42rem;
+  }
+
+  .pixel-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin: 1.75rem 0 2.75rem;
+    padding: 1rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    max-width: 56rem;
+  }
+
+  .pixel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 2.4rem);
+    grid-template-rows: repeat(3, 2.4rem);
+    gap: 2px;
+    border: 1px solid var(--line-strong);
+    padding: 2px;
+    border-radius: 4px;
+    flex: none;
+  }
+  .pixel-cell { border-radius: 1px; }
+
+  .pixel-arrow { font-size: 1.6rem; color: var(--ink-faint); flex: none; }
+
+  .pixel-out { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
+  .pixel-out .vec-readout {
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.5rem 0.7rem;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .pixel-out .cap { font-size: 0.82rem; color: var(--ink-soft); max-width: 32rem; }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.25rem);
+    align-items: start;
+  }
+
+  @media (max-width: 880px) {
+    .workspace { grid-template-columns: 1fr; }
+    .rail-figure { position: static !important; order: -1; margin-bottom: 2rem; }
+  }
+
+  .rail-figure {
+    position: sticky;
+    top: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1.1rem 1.1rem 1.35rem;
+  }
+
+  .rail-figure figcaption {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 0.6rem;
+    line-height: 1.5;
+  }
+
+  svg.plot {
+    width: 100%;
+    height: auto;
+    display: block;
+    touch-action: none;
+  }
+
+  .plot-point { cursor: grab; }
+  .plot-point:active { cursor: grabbing; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 0.85rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+  }
+
+  .legend li { display: flex; align-items: center; gap: 0.4em; }
+  .legend .swatch { width: 1.1em; height: 0.2em; border-radius: 2px; flex: none; }
+  .legend .swatch.dashed { background: none; border-top: 2px dashed currentColor; height: 0; }
+
+  .readout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .chip {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .chip .k {
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .chip .v {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    margin-top: 0.15rem;
+  }
+
+  .derivation section { margin-bottom: 2.4rem; }
+  .derivation h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.65rem;
+    margin: 0 0 0.7rem;
+    text-wrap: balance;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.7rem;
+  }
+  .section-head h2 { margin-bottom: 0; }
+
+  .reveal-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+  }
+  .reveal-toggle[aria-pressed="true"] {
+    background: var(--wash);
+    border-color: var(--dimension);
+    color: var(--dimension);
+  }
+  .reveal-icon { font-size: 1rem; line-height: 1; }
+
+  .answer-mask {
+    display: inline-block;
+    min-width: 1.4em;
+    text-align: center;
+    padding: 0 0.3em;
+    border-bottom: 2px dashed var(--line-strong);
+    color: var(--ink-faint);
+    font-style: normal;
+  }
+  .answer-mask.block { min-width: 4.5em; padding: 0.1em 0.5em; }
+
+  .derivation p { max-width: 40rem; }
+  .derivation p + p { margin-top: 0.85rem; }
+
+  .formula-block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--vector);
+    border-radius: 3px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .formula {
+    font-family: var(--font-math);
+    font-style: italic;
+    font-size: 1.35rem;
+    white-space: nowrap;
+  }
+
+  .formula .rm { font-style: normal; }
+  .formula .veca { color: var(--vector); font-weight: 700; }
+  .formula .vecb { color: var(--dimension); font-weight: 700; }
+  .formula .proj { color: var(--measure); }
+
+  .frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    margin: 0 0.2em;
+    line-height: 1.15;
+  }
+  .frac .num { padding: 0 0.2em 0.1em; border-bottom: 1.4px solid currentColor; }
+  .frac .den { padding: 0.12em 0.2em 0; }
+
+  .sqrt { position: relative; padding: 0 0.35em 0 1em; display: inline-block; }
+  .sqrt::before {
+    content: "\221A";
+    position: absolute;
+    left: 0;
+    top: -0.02em;
+    font-size: 1.05em;
+  }
+  .sqrt .radicand { border-top: 1.4px solid currentColor; padding: 0.06em 0.1em 0 0; }
+
+  .step-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+  }
+
+  .step-list > li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.7rem 0 0.7rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .step-list > li:last-child { border-bottom: none; }
+
+  .step-list > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.65rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .step-list .label {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.3rem;
+  }
+
+  .mini-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+
+  .tick-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: var(--ink-faint);
+  }
+  .tick-mark { stroke: var(--line-strong); stroke-width: 1; }
+
+  .sign-note {
+    font-family: var(--font-mono);
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+
+  footer.closing {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    max-width: 40rem;
+  }
+  footer.closing strong { color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-plate">
+      <svg class="if-mark" viewBox="0 0 114 154" role="img" aria-label="Instituto Federal do Espírito Santo">
+        <circle cx="17" cy="17" r="17" fill="#CC181F"></circle>
+        <rect x="40" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+      </svg>
+    </div>
+    <div class="brand-word">
+      <div class="if-name">INSTITUTO FEDERAL</div>
+      <div class="if-sub">Espírito Santo</div>
+      <div class="if-sub">Campus Serra</div>
+    </div>
+  </div>
+  <div class="course-id">
+    <div class="course">Aprendizado Profundo para Reconhecimento Visual</div>
+    <div class="prof">Prof. Thiago M. Paixão</div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="hero">
+    <div class="eyebrow">Álgebra linear para classificadores</div>
+    <h1>Produto escalar</h1>
+    <p class="lede">
+      Um vetor é só uma lista ordenada de números — e cada número é uma característica (feature)
+      do que ele representa. O produto escalar é a operação que compara dois vetores, e é o
+      mecanismo por trás de toda pontuação linear, incluindo a fronteira de decisão.
+    </p>
+  </div>
+
+  <div class="pixel-hero">
+    <div class="pixel-grid" id="pixelGrid"></div>
+    <div class="pixel-arrow">→</div>
+    <div class="pixel-out">
+      <div class="vec-readout">x = (0.10, 0.90, 0.10, 0.90, 0.90, 0.90, 0.10, 0.90, 0.10)</div>
+      <div class="cap">Uma imagem 3×3 "achatada" linha a linha vira um vetor de 9 dimensões — um por pixel. Para visualizar, ficaremos em 2D daqui pra frente, mas tudo generaliza para qualquer número de dimensões.</div>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <figure class="rail-figure">
+      <svg class="plot" viewBox="0 0 560 560" role="img"
+           aria-label="Plano cartesiano com dois vetores arrastáveis, a e b, partindo da origem. O ângulo entre eles e a projeção de a sobre b são recalculados em tempo real.">
+        <g id="grid"></g>
+        <g id="axes"></g>
+
+        <polyline id="angleArc" fill="none" stroke="var(--ink-faint)" stroke-width="2"></polyline>
+        <text id="angleLabel" font-family="var(--font-math)" font-style="italic" font-size="16" fill="var(--ink-faint)">θ</text>
+
+        <line id="shadowLine" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="5 4"></line>
+
+        <defs>
+          <marker id="arrowA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--vector)"></path>
+          </marker>
+          <marker id="arrowB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--dimension)"></path>
+          </marker>
+          <marker id="arrowP" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--measure)"></path>
+          </marker>
+        </defs>
+
+        <line id="projLine" stroke="var(--measure)" stroke-width="3.5" marker-end="url(#arrowP)"></line>
+
+        <line id="vecA" stroke="var(--vector)" stroke-width="4.5" marker-end="url(#arrowA)"></line>
+        <text id="labelA" font-family="var(--font-math)" font-style="italic" font-weight="700" font-size="18" fill="var(--vector)">a</text>
+
+        <line id="vecB" stroke="var(--dimension)" stroke-width="4.5" marker-end="url(#arrowB)"></line>
+        <text id="labelB" font-family="var(--font-math)" font-style="italic" font-weight="700" font-size="18" fill="var(--dimension)">b</text>
+
+        <circle id="pointA" class="plot-point" r="10" fill="var(--paper)" stroke="var(--vector)" stroke-width="3.5"></circle>
+        <circle id="pointB" class="plot-point" r="10" fill="var(--paper)" stroke="var(--dimension)" stroke-width="3.5"></circle>
+      </svg>
+      <figcaption>Arraste as pontas de <em>a</em> e <em>b</em>. O ângulo θ, a sombra (projeção) e os cálculos ao lado acompanham em tempo real.</figcaption>
+
+      <ul class="legend">
+        <li><span class="swatch" style="background:var(--vector)"></span> vetor <em>a</em></li>
+        <li><span class="swatch" style="background:var(--dimension)"></span> vetor <em>b</em></li>
+        <li><span class="swatch" style="background:var(--measure)"></span> projeção de <em>a</em> em <em>b</em></li>
+        <li><span class="swatch dashed" style="color:var(--ink-faint)"></span> sombra / ângulo θ</li>
+      </ul>
+
+      <div class="readout">
+        <div class="chip"><div class="k">a</div><div class="v" id="chipA">(3.00, 2.00)</div></div>
+        <div class="chip"><div class="k">b</div><div class="v" id="chipB">(1.00, 3.00)</div></div>
+        <div class="chip"><div class="k">a · b</div><div class="v" id="chipDot">?</div></div>
+        <div class="chip"><div class="k">cos θ</div><div class="v" id="chipCos">?</div></div>
+      </div>
+    </figure>
+
+    <div class="derivation">
+      <section>
+        <h2>Comprimento (norma) de um vetor</h2>
+        <p>
+          A norma mede o tamanho de um vetor, independente da direção:
+        </p>
+        <div class="formula-block">
+          <span class="formula">
+            <span class="rm">‖</span><span class="rm">x</span><span class="rm">‖</span> =
+            <span class="sqrt"><span class="radicand rm">x<sub>1</sub><sup>2</sup> + x<sub>2</sub><sup>2</sup> + ⋯ + x<sub>d</sub><sup>2</sup></span></span>
+          </span>
+        </div>
+        <p>Vamos precisar disso para separar o <em>tamanho</em> de um vetor da sua <em>direção</em>.</p>
+      </section>
+
+      <section>
+        <h2>Produto escalar</h2>
+        <p>
+          Dados dois vetores <span class="formula" style="font-size:1rem"><span class="veca">a</span></span> e
+          <span class="formula" style="font-size:1rem"><span class="vecb">b</span></span>, o produto escalar
+          pode ser calculado de duas formas equivalentes:
+        </p>
+        <div class="formula-block">
+          <span class="formula">
+            <span class="veca">a</span><span class="rm">·</span><span class="vecb">b</span>
+            <span class="rm"> = </span>
+            <span class="veca">a</span><sub>1</sub><span class="vecb">b</span><sub>1</sub>
+            <span class="rm"> + </span>
+            <span class="veca">a</span><sub>2</sub><span class="vecb">b</span><sub>2</sub>
+            <span class="rm"> + ⋯ = </span>
+            <span class="rm">‖</span><span class="veca">a</span><span class="rm">‖ ‖</span><span class="vecb">b</span><span class="rm">‖ cos θ</span>
+          </span>
+        </div>
+        <p>
+          O lado esquerdo é fácil de calcular; o lado direito é o que torna o produto escalar interessante —
+          ele liga uma operação puramente algébrica a uma <strong>geometria</strong>: o quanto <em>a</em> e
+          <em>b</em> apontam na mesma direção, escalado pelo tamanho de cada um.
+        </p>
+      </section>
+
+      <section>
+        <h2>Projeção de um vetor sobre outro</h2>
+        <p>
+          O produto escalar também responde a uma pergunta geométrica: <em>quanto de <strong>a</strong> está
+          na direção de <strong>b</strong>?</em> A "sombra" que a ponta de <em>a</em> projeta sobre a reta de
+          <em>b</em> é a <strong>projeção</strong>. Seu comprimento (com sinal) é:
+        </p>
+        <div class="formula-block">
+          <span class="formula">
+            <span class="rm">comp</span><sub><span class="vecb">b</span></sub><span class="veca">a</span>
+            <span class="rm"> = </span>
+            <span class="frac"><span class="num veca rm">a·b</span><span class="den vecb rm">‖b‖</span></span>
+          </span>
+        </div>
+        <p>
+          Positivo quando a sombra aponta no sentido de <em>b</em> (θ &lt; 90°), negativo quando aponta no
+          sentido oposto (θ &gt; 90°), e zero quando <em>a</em> e <em>b</em> são perpendiculares — <em>a</em>
+          não projeta sombra alguma sobre <em>b</em>.
+        </p>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Calculando à mão</h2>
+          <button type="button" id="revealBtn" class="reveal-toggle" aria-pressed="false">
+            <span class="reveal-icon">👁</span><span class="reveal-text">Mostrar resultados</span>
+          </button>
+        </div>
+        <p>Para os vetores <em>a</em> e <em>b</em> que você está arrastando no gráfico, resolva no papel e depois confira:</p>
+        <ol class="step-list">
+          <li>
+            <div class="label">Norma de <em>a</em> <span class="formula" style="font-size:0.95rem">‖<span class="veca">a</span>‖</span></div>
+            <div class="formula" id="stepNormA"></div>
+          </li>
+          <li>
+            <div class="label">Norma de <em>b</em> <span class="formula" style="font-size:0.95rem">‖<span class="vecb">b</span>‖</span></div>
+            <div class="formula" id="stepNormB"></div>
+          </li>
+          <li>
+            <div class="label">Produto escalar (forma algébrica) <span class="formula" style="font-size:0.95rem"><span class="veca">a</span>·<span class="vecb">b</span></span></div>
+            <div class="formula" id="stepDot"></div>
+          </li>
+          <li>
+            <div class="label">Cosseno do ângulo <span class="formula" style="font-size:0.95rem">cos θ = (<span class="veca">a</span>·<span class="vecb">b</span>) / (‖<span class="veca">a</span>‖‖<span class="vecb">b</span>‖)</span></div>
+            <div class="formula" id="stepCos"></div>
+          </li>
+          <li>
+            <div class="label">Ângulo <span class="formula" style="font-size:0.95rem">θ = arccos(cos θ)</span></div>
+            <div class="formula" id="stepTheta"></div>
+          </li>
+          <li>
+            <div class="label">Projeção escalar de <em>a</em> sobre <em>b</em> <span class="formula" style="font-size:0.95rem">comp<sub>b</sub>a = (<span class="veca">a</span>·<span class="vecb">b</span>) / ‖<span class="vecb">b</span>‖</span></div>
+            <div class="formula" id="stepProj"></div>
+          </li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Efeito do ângulo e da magnitude</h2>
+        <p>
+          O produto escalar mistura duas coisas diferentes. Percorrendo <strong>uma curva</strong> (mesma cor),
+          o que muda é só o ângulo: <em>a·b</em> oscila como um cosseno — máximo quando <em>a</em> e <em>b</em>
+          apontam para o mesmo lado (θ = 0°), zero quando são perpendiculares (θ = 90°), mínimo quando são
+          opostos (θ = 180°). Comparando <strong>curvas de tons diferentes</strong>, o que muda é a magnitude de
+          <em>b</em>: escalar <em>b</em> por um fator α apenas estica a curva na vertical — a forma não muda,
+          só a amplitude. O ponto marcado é o par (<em>a</em>, <em>b</em>) que você está arrastando no gráfico.
+        </p>
+        <svg class="mini-chart" id="angleChart" viewBox="0 0 480 220" role="img"
+             aria-label="Gráfico do produto escalar em função do ângulo entre a e b. Três curvas de cosseno, com amplitudes correspondentes a 50%, 100% e 150% do comprimento atual de b, mostrando que o ângulo muda a posição na curva e a magnitude muda sua altura. O ponto atual é marcado na curva de 100%.">
+          <g id="angleTicks"></g>
+          <line id="angleZero" stroke="var(--line-strong)" stroke-width="1" stroke-dasharray="3 3"></line>
+          <polyline id="curve50" class="scale-curve" fill="none" stroke="var(--measure)" stroke-width="1.5" opacity="0.35"></polyline>
+          <polyline id="curve150" class="scale-curve" fill="none" stroke="var(--measure)" stroke-width="1.5" opacity="0.35"></polyline>
+          <polyline id="curve100" fill="none" stroke="var(--measure)" stroke-width="2.75"></polyline>
+          <text id="label50" class="curve-label" font-family="var(--font-mono)" font-size="11" fill="var(--measure)" opacity="0.6" text-anchor="middle">50%</text>
+          <text id="label100" class="curve-label" font-family="var(--font-mono)" font-size="11" font-weight="700" fill="var(--measure)" text-anchor="middle">100%</text>
+          <text id="label150" class="curve-label" font-family="var(--font-mono)" font-size="11" fill="var(--measure)" opacity="0.6" text-anchor="middle">150%</text>
+          <circle id="angleMarker" r="5.5" fill="var(--measure)" stroke="var(--surface)" stroke-width="1.5"></circle>
+          <text id="angleMarkerLabel" font-family="var(--font-mono)" font-weight="700" font-size="12" fill="var(--measure)" text-anchor="middle"></text>
+        </svg>
+      </section>
+
+      <section>
+        <h2>Produto escalar como similaridade</h2>
+        <p>
+          Para medir só o <em>alinhamento</em> — sem a confusão do tamanho acima — normalizamos os dois
+          vetores antes. Essa é a <strong>similaridade de cosseno</strong>:
+        </p>
+        <div class="formula-block">
+          <span class="formula">
+            <span class="rm">sim(</span><span class="veca">a</span><span class="rm">,</span><span class="vecb">b</span><span class="rm">) = </span>
+            <span class="frac"><span class="num rm"><span class="veca">a</span>·<span class="vecb">b</span></span><span class="den rm">‖a‖‖b‖</span></span>
+            <span class="rm"> = cos θ ∈ [-1, 1]</span>
+          </span>
+        </div>
+        <p class="sign-note" id="simNote"></p>
+      </section>
+    </div>
+  </div>
+
+  <footer class="closing">
+    <strong>Para lembrar.</strong> O produto escalar liga álgebra a geometria: a soma dos produtos das
+    coordenadas é igual a <em>‖a‖‖b‖cos θ</em>. Dividindo pelas normas, isolamos só a direção — essa é a
+    mesma métrica usada para comparar vetores de características entre imagens.
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var RANGE = { xmin: -5, xmax: 5, ymin: -5, ymax: 5 };
+  var SVG_SIZE = 560;
+  var PAD = { l: 46, r: 20, t: 20, b: 34 };
+  var MIN_NORM = 0.6;
+
+  var plotW = SVG_SIZE - PAD.l - PAD.r;
+  var plotH = SVG_SIZE - PAD.t - PAD.b;
+  var scale = Math.min(plotW / (RANGE.xmax - RANGE.xmin), plotH / (RANGE.ymax - RANGE.ymin));
+  var left0 = PAD.l + (plotW - scale * (RANGE.xmax - RANGE.xmin)) / 2;
+  var top0 = PAD.t + (plotH - scale * (RANGE.ymax - RANGE.ymin)) / 2;
+
+  function toSvg(x1, x2) {
+    return [
+      left0 + (x1 - RANGE.xmin) * scale,
+      top0 + (RANGE.ymax - x2) * scale
+    ];
+  }
+  function toMath(sx, sy) {
+    return [
+      RANGE.xmin + (sx - left0) / scale,
+      RANGE.ymax - (sy - top0) / scale
+    ];
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function norm(x, y) { return Math.sqrt(x * x + y * y); }
+  function dotp(ax, ay, bx, by) { return ax * bx + ay * by; }
+
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs) {
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  var gridG = document.getElementById("grid");
+  var axesG = document.getElementById("axes");
+
+  for (var i = RANGE.xmin; i <= RANGE.xmax; i++) {
+    var p1 = toSvg(i, RANGE.ymin), p2 = toSvg(i, RANGE.ymax);
+    gridG.appendChild(el("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: "var(--line)", "stroke-width": 1 }));
+  }
+  for (var j = RANGE.ymin; j <= RANGE.ymax; j++) {
+    var q1 = toSvg(RANGE.xmin, j), q2 = toSvg(RANGE.xmax, j);
+    gridG.appendChild(el("line", { x1: q1[0], y1: q1[1], x2: q2[0], y2: q2[1], stroke: "var(--line)", "stroke-width": 1 }));
+  }
+
+  var ax1 = toSvg(RANGE.xmin, 0), ax2 = toSvg(RANGE.xmax, 0);
+  var ay1 = toSvg(0, RANGE.ymin), ay2 = toSvg(0, RANGE.ymax);
+  axesG.appendChild(el("line", { x1: ax1[0], y1: ax1[1], x2: ax2[0], y2: ax2[1], stroke: "var(--line-strong)", "stroke-width": 2 }));
+  axesG.appendChild(el("line", { x1: ay1[0], y1: ay1[1], x2: ay2[0], y2: ay2[1], stroke: "var(--line-strong)", "stroke-width": 2 }));
+  var o0 = toSvg(0, 0);
+  axesG.appendChild(el("circle", { cx: o0[0], cy: o0[1], r: 3, fill: "var(--line-strong)" }));
+  var labelX1 = toSvg(RANGE.xmax - 0.3, 0);
+  var labelX2 = toSvg(0, RANGE.ymax - 0.3);
+  var lt1 = el("text", { x: labelX1[0], y: labelX1[1] - 10, "font-family": "var(--font-math)", "font-style": "italic", "font-size": 16, fill: "var(--ink-faint)" });
+  lt1.textContent = "x₁";
+  axesG.appendChild(lt1);
+  var lt2 = el("text", { x: labelX2[0] + 10, y: labelX2[1] + 5, "font-family": "var(--font-math)", "font-style": "italic", "font-size": 16, fill: "var(--ink-faint)" });
+  lt2.textContent = "x₂";
+  axesG.appendChild(lt2);
+
+  var vecA = document.getElementById("vecA"), labelA = document.getElementById("labelA");
+  var vecB = document.getElementById("vecB"), labelB = document.getElementById("labelB");
+  var pointA = document.getElementById("pointA"), pointB = document.getElementById("pointB");
+  var projLine = document.getElementById("projLine");
+  var shadowLine = document.getElementById("shadowLine");
+  var angleArc = document.getElementById("angleArc");
+  var angleLabel = document.getElementById("angleLabel");
+
+  var revealBtn = document.getElementById("revealBtn");
+  var revealText = revealBtn.querySelector(".reveal-text");
+
+  var state = { ax: 3, ay: 2, bx: 1, by: 3, revealed: false };
+
+  function fmt(n) { return n.toFixed(2); }
+  function answer(text) {
+    return state.revealed ? text : "<span class=\"answer-mask\">?</span>";
+  }
+  function stepBlock(html) {
+    return state.revealed ? html : "<span class=\"answer-mask block\">?</span>";
+  }
+
+  function clampToRange(x, y) {
+    x = clamp(x, RANGE.xmin, RANGE.xmax);
+    y = clamp(y, RANGE.ymin, RANGE.ymax);
+    var n = norm(x, y);
+    if (n < MIN_NORM) {
+      if (n < 1e-6) { x = MIN_NORM; y = 0; }
+      else { var s = MIN_NORM / n; x *= s; y *= s; }
+    }
+    return [x, y];
+  }
+
+  // --- Unified chart: dot product vs. angle, replicated at three magnitude scales ---
+  var CHART = { w: 480, h: 220, l: 14, r: 14, t: 22, b: 30 };
+  var chartPlotW = CHART.w - CHART.l - CHART.r;
+  var chartPlotH = CHART.h - CHART.t - CHART.b;
+  var SCALES = [0.5, 1, 1.5];
+
+  function chartX(deg) { return CHART.l + (deg + 180) / 360 * chartPlotW; }
+
+  function initAngleTicks() {
+    var g = document.getElementById("angleTicks");
+    [-180, -90, 0, 90, 180].forEach(function (deg) {
+      var x = chartX(deg);
+      var yBottom = CHART.t + chartPlotH;
+      g.appendChild(el("line", { x1: x, y1: yBottom, x2: x, y2: yBottom + 4, class: "tick-mark" }));
+      var label = el("text", { x: x, y: yBottom + 14, "text-anchor": "middle", class: "tick-label" });
+      label.textContent = deg + "°";
+      g.appendChild(label);
+    });
+  }
+
+  function curvePoints(amplitude, yPx) {
+    var pts = [];
+    for (var d = -180; d <= 180; d += 6) {
+      var val = amplitude * Math.cos(d * Math.PI / 180);
+      pts.push(chartX(d).toFixed(1) + "," + yPx(val).toFixed(1));
+    }
+    return pts.join(" ");
+  }
+
+  function updateAngleChart(normA, normB, dotv, deltaRad) {
+    var baseM = normA * normB;
+    var maxAmplitude = baseM * Math.max.apply(null, SCALES);
+    var M = Math.max(maxAmplitude * 1.15, 0.4);
+    function yPx(val) { return CHART.t + (M - val) / (2 * M) * chartPlotH; }
+
+    var zeroY = CHART.t + chartPlotH / 2;
+    document.getElementById("angleZero").setAttribute("x1", CHART.l);
+    document.getElementById("angleZero").setAttribute("x2", CHART.l + chartPlotW);
+    document.getElementById("angleZero").setAttribute("y1", zeroY);
+    document.getElementById("angleZero").setAttribute("y2", zeroY);
+
+    document.getElementById("curve50").setAttribute("points", curvePoints(baseM * 0.5, yPx));
+    document.getElementById("curve100").setAttribute("points", curvePoints(baseM * 1, yPx));
+    document.getElementById("curve150").setAttribute("points", curvePoints(baseM * 1.5, yPx));
+
+    var peakX = chartX(0);
+    document.getElementById("label50").setAttribute("x", peakX);
+    document.getElementById("label50").setAttribute("y", yPx(baseM * 0.5) - 9);
+    document.getElementById("label100").setAttribute("x", peakX);
+    document.getElementById("label100").setAttribute("y", yPx(baseM * 1) - 9);
+    document.getElementById("label150").setAttribute("x", peakX);
+    document.getElementById("label150").setAttribute("y", yPx(baseM * 1.5) - 9);
+
+    var degCurrent = deltaRad * 180 / Math.PI;
+    var mx = chartX(degCurrent), my = yPx(dotv);
+    document.getElementById("angleMarker").setAttribute("cx", mx);
+    document.getElementById("angleMarker").setAttribute("cy", my);
+    var label = document.getElementById("angleMarkerLabel");
+    label.setAttribute("x", clamp(mx, CHART.l + 36, CHART.l + chartPlotW - 36));
+    label.setAttribute("y", my < zeroY ? my - 11 : my + 19);
+    label.textContent = degCurrent.toFixed(0) + "°, " + dotv.toFixed(2);
+  }
+
+  function render() {
+    var ax = state.ax, ay = state.ay, bx = state.bx, by = state.by;
+    var normA = norm(ax, ay), normB = norm(bx, by);
+    var dotv = dotp(ax, ay, bx, by);
+    var cosT = clamp(dotv / (normA * normB), -1, 1);
+    var thetaDeg = Math.acos(cosT) * 180 / Math.PI;
+    var compB = dotv / normB;
+    var projX = (dotv / (normB * normB)) * bx;
+    var projY = (dotv / (normB * normB)) * by;
+
+    var sA = toSvg(ax, ay), sB = toSvg(bx, by), sProj = toSvg(projX, projY), sO = toSvg(0, 0);
+
+    vecA.setAttribute("x1", sO[0]); vecA.setAttribute("y1", sO[1]);
+    vecA.setAttribute("x2", sA[0]); vecA.setAttribute("y2", sA[1]);
+    labelA.setAttribute("x", sA[0] + 10); labelA.setAttribute("y", sA[1] - 10);
+
+    vecB.setAttribute("x1", sO[0]); vecB.setAttribute("y1", sO[1]);
+    vecB.setAttribute("x2", sB[0]); vecB.setAttribute("y2", sB[1]);
+    labelB.setAttribute("x", sB[0] + 10); labelB.setAttribute("y", sB[1] - 10);
+
+    projLine.setAttribute("x1", sO[0]); projLine.setAttribute("y1", sO[1]);
+    projLine.setAttribute("x2", sProj[0]); projLine.setAttribute("y2", sProj[1]);
+
+    shadowLine.setAttribute("x1", sA[0]); shadowLine.setAttribute("y1", sA[1]);
+    shadowLine.setAttribute("x2", sProj[0]); shadowLine.setAttribute("y2", sProj[1]);
+
+    pointA.setAttribute("cx", sA[0]); pointA.setAttribute("cy", sA[1]);
+    pointB.setAttribute("cx", sB[0]); pointB.setAttribute("cy", sB[1]);
+
+    var angA = Math.atan2(ay, ax), angB = Math.atan2(by, bx);
+    var delta = ((angB - angA + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    var steps = 24, arcPts = [];
+    var arcR = Math.min(1.1, Math.min(normA, normB) * 0.55);
+    for (var s = 0; s <= steps; s++) {
+      var t = s / steps;
+      var ang = angA + delta * t;
+      var p = toSvg(arcR * Math.cos(ang), arcR * Math.sin(ang));
+      arcPts.push(p[0].toFixed(1) + "," + p[1].toFixed(1));
+    }
+    angleArc.setAttribute("points", arcPts.join(" "));
+    var midAng = angA + delta / 2;
+    var lp = toSvg((arcR + 0.35) * Math.cos(midAng), (arcR + 0.35) * Math.sin(midAng));
+    angleLabel.setAttribute("x", lp[0]); angleLabel.setAttribute("y", lp[1]);
+
+    document.getElementById("chipA").textContent = "(" + fmt(ax) + ", " + fmt(ay) + ")";
+    document.getElementById("chipB").textContent = "(" + fmt(bx) + ", " + fmt(by) + ")";
+    document.getElementById("chipDot").innerHTML = answer(fmt(dotv));
+    document.getElementById("chipCos").innerHTML = answer(fmt(cosT));
+
+    var simNote = document.getElementById("simNote");
+    if (!state.revealed) {
+      simNote.innerHTML = "Calcule cos θ acima e clique em “Mostrar resultados” para ver o que ele diz sobre a e b.";
+      simNote.style.color = "var(--ink-faint)";
+    } else if (cosT > 0.7) {
+      simNote.textContent = "cos θ = " + fmt(cosT) + "  →  a e b são bastante similares (quase na mesma direção).";
+      simNote.style.color = "var(--vector)";
+    } else if (cosT < -0.7) {
+      simNote.textContent = "cos θ = " + fmt(cosT) + "  →  a e b são quase opostos.";
+      simNote.style.color = "var(--boundary)";
+    } else if (cosT > -0.3 && cosT < 0.3) {
+      simNote.textContent = "cos θ = " + fmt(cosT) + "  →  a e b estão quase ortogonais — pouco relacionados.";
+      simNote.style.color = "var(--ink-soft)";
+    } else {
+      simNote.textContent = "cos θ = " + fmt(cosT) + "  →  alinhamento parcial entre a e b.";
+      simNote.style.color = "var(--dimension)";
+    }
+
+    document.getElementById("stepNormA").innerHTML = stepBlock(
+      "<span class=\"sqrt\"><span class=\"radicand rm\">" + fmt(ax) + "² + " + fmt(ay) + "²</span></span>" +
+      "<span class=\"rm\"> = " + fmt(normA) + "</span>"
+    );
+    document.getElementById("stepNormB").innerHTML = stepBlock(
+      "<span class=\"sqrt\"><span class=\"radicand rm\">" + fmt(bx) + "² + " + fmt(by) + "²</span></span>" +
+      "<span class=\"rm\"> = " + fmt(normB) + "</span>"
+    );
+    document.getElementById("stepDot").innerHTML = stepBlock(
+      "<span class=\"rm\">" + fmt(ax) + "(" + fmt(bx) + ") + " + fmt(ay) + "(" + fmt(by) + ") = " + fmt(dotv) + "</span>"
+    );
+    document.getElementById("stepCos").innerHTML = stepBlock(
+      "<span class=\"frac\"><span class=\"num rm\">" + fmt(dotv) + "</span><span class=\"den rm\">" + fmt(normA) + " × " + fmt(normB) + "</span></span>" +
+      "<span class=\"rm\"> = " + fmt(cosT) + "</span>"
+    );
+    document.getElementById("stepTheta").innerHTML = stepBlock(
+      "<span class=\"rm\">arccos(" + fmt(cosT) + ") = " + thetaDeg.toFixed(1) + "°</span>"
+    );
+    document.getElementById("stepProj").innerHTML = stepBlock(
+      "<span class=\"frac\"><span class=\"num rm\">" + fmt(dotv) + "</span><span class=\"den rm\">" + fmt(normB) + "</span></span>" +
+      "<span class=\"rm\"> = <strong class=\"proj\">" + fmt(compB) + "</strong></span>"
+    );
+
+    updateAngleChart(normA, normB, dotv, delta);
+  }
+
+  revealBtn.addEventListener("click", function () {
+    state.revealed = !state.revealed;
+    revealBtn.setAttribute("aria-pressed", state.revealed ? "true" : "false");
+    revealText.textContent = state.revealed ? "Ocultar resultados" : "Mostrar resultados";
+    render();
+  });
+
+  var svgEl = document.querySelector("svg.plot");
+
+  function pointerToMath(evt) {
+    var rect = svgEl.getBoundingClientRect();
+    var viewScale = SVG_SIZE / rect.width;
+    var sx = (evt.clientX - rect.left) * viewScale;
+    var sy = (evt.clientY - rect.top) * viewScale;
+    return toMath(sx, sy);
+  }
+
+  function wireDrag(pointEl, xKey, yKey) {
+    var dragging = false;
+    pointEl.addEventListener("pointerdown", function (evt) {
+      dragging = true;
+      pointEl.setPointerCapture(evt.pointerId);
+    });
+    pointEl.addEventListener("pointermove", function (evt) {
+      if (!dragging) return;
+      var m = pointerToMath(evt);
+      var c = clampToRange(m[0], m[1]);
+      state[xKey] = c[0];
+      state[yKey] = c[1];
+      render();
+    });
+    pointEl.addEventListener("pointerup", function () { dragging = false; });
+    pointEl.addEventListener("pointercancel", function () { dragging = false; });
+  }
+
+  wireDrag(pointA, "ax", "ay");
+  wireDrag(pointB, "bx", "by");
+
+  // Pixel-image illustration (matches the notebook's 3x3 "plus" pattern)
+  var pixelValues = [0.1, 0.9, 0.1, 0.9, 0.9, 0.9, 0.1, 0.9, 0.1];
+  var pixelGrid = document.getElementById("pixelGrid");
+  pixelValues.forEach(function (v) {
+    var cell = document.createElement("div");
+    cell.className = "pixel-cell";
+    var g = Math.round(v * 255);
+    cell.style.background = "rgb(" + g + "," + g + "," + g + ")";
+    pixelGrid.appendChild(cell);
+  });
+
+  initAngleTicks();
+  render();
+})();
+</script>
+</body>
+</html>
