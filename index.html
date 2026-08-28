@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Página do curso Aprendizado Profundo para Reconhecimento Visual — Ifes Campus Serra: slides, notebooks e material interativo por aula.">
+<style>
+  :root {
+    --ink: #121821;
+    --ink-soft: #4B5866;
+    --ink-faint: #7C8894;
+    --paper: #F2F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9ECEC;
+    --line: #D6DBDC;
+    --line-strong: #B9C1C2;
+    --boundary: #B23A2E;
+    --vector: #2451C4;
+    --dimension: #A66A16;
+    --measure: #1E7F72;
+    --wash: rgba(36, 81, 196, 0.05);
+    --chip-pos-border: #A9C0EA;
+    --chip-neg-border: #E4B2AC;
+
+    --if-green: #3F9C42;
+    --if-red: #CC181F;
+    --brand-plate: #FFFFFF;
+
+    --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-math: "Sitka Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: Corbel, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #E7ECF1;
+      --ink-soft: #A9B4C0;
+      --ink-faint: #74818F;
+      --paper: #0D131C;
+      --surface: #151D29;
+      --surface-2: #1B2431;
+      --line: #29323F;
+      --line-strong: #37424F;
+      --boundary: #E2685A;
+      --vector: #7DA1FF;
+      --dimension: #E8A33D;
+      --measure: #4FD9C4;
+      --wash: rgba(125, 161, 255, 0.1);
+      --chip-pos-border: #3E5488;
+      --chip-neg-border: #74423B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E7ECF1;
+    --ink-soft: #A9B4C0;
+    --ink-faint: #74818F;
+    --paper: #0D131C;
+    --surface: #151D29;
+    --surface-2: #1B2431;
+    --line: #29323F;
+    --line-strong: #37424F;
+    --boundary: #E2685A;
+    --vector: #7DA1FF;
+    --dimension: #E8A33D;
+    --measure: #4FD9C4;
+    --wash: rgba(125, 161, 255, 0.1);
+    --chip-pos-border: #3E5488;
+    --chip-neg-border: #74423B;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-plate {
+    background: var(--brand-plate);
+    border-radius: 6px;
+    padding: 0.3rem;
+    display: flex;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .if-mark { width: 2.3rem; height: auto; display: block; }
+
+  .brand-word .if-name {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .brand-word .if-sub {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    color: var(--ink-soft);
+  }
+
+  .course-id { text-align: right; }
+
+  .masthead .course {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .masthead .prof {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    font-family: var(--font-math);
+    margin-top: 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .course-id { text-align: left; }
+  }
+
+  main.page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 4rem;
+  }
+
+  .hero {
+    max-width: 46rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .eyebrow {
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--dimension);
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.1;
+    margin: 0 0 0.85rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  .lede {
+    font-size: 1.2rem;
+    color: var(--ink-soft);
+    max-width: 42rem;
+  }
+
+  .lesson-list {
+    list-style: none;
+    margin: 2.25rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 56rem;
+  }
+
+  .lesson {
+    display: flex;
+    gap: 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.1rem 1.3rem;
+  }
+
+  .lesson-num {
+    flex: none;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .lesson-body { min-width: 0; flex: 1; }
+
+  .lesson-body h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.35rem;
+    margin: 0.15rem 0 0.7rem;
+    text-wrap: balance;
+  }
+
+  .resource-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .resource-list a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  .resource-list a:hover { color: var(--vector); }
+  .resource-list a:hover .tag { border-color: var(--vector); color: var(--vector); }
+
+  .tag {
+    flex: none;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+  }
+  .tag-pdf { color: var(--boundary); border-color: var(--chip-neg-border); }
+  .tag-nb { color: var(--measure); }
+  .tag-int { color: var(--vector); border-color: var(--chip-pos-border); }
+
+  .lesson-empty { opacity: 0.7; }
+  .soon { color: var(--ink-faint); font-style: italic; margin: 0.2rem 0 0; }
+
+  @media (max-width: 520px) {
+    .lesson { flex-direction: column; }
+  }
+
+  footer.closing {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    max-width: 40rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-plate">
+      <svg class="if-mark" viewBox="0 0 114 154" role="img" aria-label="Instituto Federal do Espírito Santo">
+        <circle cx="17" cy="17" r="17" fill="#CC181F"></circle>
+        <rect x="40" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+      </svg>
+    </div>
+    <div class="brand-word">
+      <div class="if-name">INSTITUTO FEDERAL</div>
+      <div class="if-sub">Espírito Santo</div>
+      <div class="if-sub">Campus Serra</div>
+    </div>
+  </div>
+  <div class="course-id">
+    <div class="course">Aprendizado Profundo para Reconhecimento Visual</div>
+    <div class="prof">Prof. Thiago M. Paixão</div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="hero">
+    <div class="eyebrow">Página do curso</div>
+    <h1>Aprendizado Profundo para Reconhecimento Visual</h1>
+    <p class="lede">
+      Slides, notebooks e material interativo, organizados por aula.
+    </p>
+  </div>
+
+  <ol class="lesson-list">
+    <li class="lesson">
+      <div class="lesson-num">01</div>
+      <div class="lesson-body">
+        <h2>Introdução</h2>
+        <ul class="resource-list">
+          <li><a href="01_intro/lecture_1_part_1.pdf"><span class="tag tag-pdf">PDF</span> Slides — parte 1</a></li>
+          <li><a href="01_intro/lecture_1_part_2.pdf"><span class="tag tag-pdf">PDF</span> Slides — parte 2</a></li>
+          <li><a href="01_intro/CS231n%20Python%20Tutorial%20With%20Google%20Colab.ipynb"><span class="tag tag-nb">Notebook</span> CS231n Python Tutorial With Google Colab</a></li>
+          <li><a href="01_intro/Exerc%C3%ADcios%20Numpy.ipynb"><span class="tag tag-nb">Notebook</span> Exercícios Numpy</a></li>
+          <li><a href="01_intro/Image%20Representation.ipynb"><span class="tag tag-nb">Notebook</span> Image Representation</a></li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="lesson">
+      <div class="lesson-num">02</div>
+      <div class="lesson-body">
+        <h2>Classificação de imagens</h2>
+        <ul class="resource-list">
+          <li><a href="02_image-classification/produto-escalar/"><span class="tag tag-int">Interativo</span> Produto escalar</a></li>
+          <li><a href="02_image-classification/fronteira-decisao/"><span class="tag tag-int">Interativo</span> Fronteira de decisão</a></li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="lesson lesson-empty">
+      <div class="lesson-num">03</div>
+      <div class="lesson-body">
+        <h2>Regularização e otimização</h2>
+        <p class="soon">Em breve.</p>
+      </div>
+    </li>
+  </ol>
+
+  <footer class="closing">
+    Material do Instituto Federal do Espírito Santo — Campus Serra.
+  </footer>
+</main>
+
+</body>
+</html>
