@@ -270,6 +270,14 @@
   .lesson-empty { opacity: 0.7; }
   .soon { color: var(--ink-faint); font-style: italic; margin: 0.2rem 0 0; }
 
+  .src {
+    color: var(--ink-faint);
+    font-size: 0.82rem;
+    font-style: italic;
+  }
+
+  .ext-icon { font-size: 0.75em; }
+
   @media (max-width: 520px) {
     .lesson { flex-direction: column; }
   }
@@ -282,6 +290,9 @@
     font-size: 0.85rem;
     max-width: 40rem;
   }
+  footer.closing p { margin: 0 0 0.6rem; }
+  footer.closing p:last-child { margin-bottom: 0; }
+  footer.closing a { color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -329,8 +340,8 @@
       <div class="lesson-body">
         <h2>Introdução</h2>
         <ul class="resource-list">
-          <li><a href="01_intro/lecture_1_part_1.pdf"><span class="tag tag-pdf">PDF</span> Slides — parte 1</a></li>
-          <li><a href="01_intro/lecture_1_part_2.pdf"><span class="tag tag-pdf">PDF</span> Slides — parte 2</a></li>
+          <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_1.pdf" target="_blank" rel="noopener"><span class="tag tag-pdf">PDF</span> Slides — parte 1 <span class="src">(Stanford CS231n) <span class="ext-icon">↗</span></span></a></li>
+          <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_2.pdf" target="_blank" rel="noopener"><span class="tag tag-pdf">PDF</span> Slides — parte 2 <span class="src">(Stanford CS231n) <span class="ext-icon">↗</span></span></a></li>
           <li><a href="01_intro/CS231n%20Python%20Tutorial%20With%20Google%20Colab.ipynb"><span class="tag tag-nb">Notebook</span> CS231n Python Tutorial With Google Colab</a></li>
           <li><a href="01_intro/Exerc%C3%ADcios%20Numpy.ipynb"><span class="tag tag-nb">Notebook</span> Exercícios Numpy</a></li>
           <li><a href="01_intro/Image%20Representation.ipynb"><span class="tag tag-nb">Notebook</span> Image Representation</a></li>
@@ -359,7 +370,13 @@
   </ol>
 
   <footer class="closing">
-    Material do Instituto Federal do Espírito Santo — Campus Serra.
+    <p>
+      Os slides de aula seguem, com adaptações, o material do curso
+      <a href="https://cs231n.stanford.edu/" target="_blank" rel="noopener">CS231n: Deep Learning for Computer Vision</a>,
+      Stanford University. Os links de slides acima apontam para a fonte oficial — os direitos
+      autorais dos slides pertencem aos autores originais do CS231n.
+    </p>
+    <p>Material do Instituto Federal do Espírito Santo — Campus Serra.</p>
   </footer>
 </main>
 
