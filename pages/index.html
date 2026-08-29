@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Página do curso Aprendizado Profundo para Reconhecimento Visual — Ifes Campus Serra: aulas, atividades, slides e notebooks.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<style>
+  :root {
+    --ink: #121821;
+    --ink-soft: #4B5866;
+    --paper: #F2F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9ECEC;
+    --line: #D6DBDC;
+    --boundary: #B23A2E;
+    --vector: #2451C4;
+    --dimension: #A66A16;
+    --measure: #1E7F72;
+    --wash-dimension: rgba(166, 106, 22, 0.08);
+
+    --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-math: "Sitka Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: Corbel, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+
+    --bs-body-font-family: var(--font-body);
+    --bs-body-bg: var(--paper);
+    --bs-body-bg-rgb: 242, 244, 243;
+    --bs-body-color: var(--ink);
+    --bs-body-color-rgb: 18, 24, 33;
+    --bs-border-color: var(--line);
+    --bs-border-color-translucent: var(--line);
+    --bs-secondary-color: var(--ink-soft);
+    --bs-secondary-color-rgb: 75, 88, 102;
+    --bs-emphasis-color: var(--ink);
+    --bs-emphasis-color-rgb: 18, 24, 33;
+    --bs-link-color: var(--vector);
+    --bs-link-hover-color: var(--vector);
+
+    --bs-primary: var(--vector);
+    --bs-primary-rgb: 36, 81, 196;
+    --bs-primary-text-emphasis: var(--vector);
+    --bs-primary-bg-subtle: #DCE6FA;
+    --bs-primary-border-subtle: #A9C0EA;
+
+    --bs-danger: var(--boundary);
+    --bs-danger-rgb: 178, 58, 46;
+    --bs-danger-text-emphasis: var(--boundary);
+    --bs-danger-bg-subtle: #F6E2DF;
+    --bs-danger-border-subtle: #E4B2AC;
+
+    --bs-warning: var(--dimension);
+    --bs-warning-rgb: 166, 106, 22;
+    --bs-warning-text-emphasis: var(--dimension);
+    --bs-warning-bg-subtle: var(--wash-dimension);
+    --bs-warning-border-subtle: var(--dimension);
+
+    --bs-success: var(--measure);
+    --bs-success-rgb: 30, 127, 114;
+    --bs-success-text-emphasis: var(--measure);
+    --bs-success-bg-subtle: #DCEEEA;
+    --bs-success-border-subtle: #9BCFC4;
+
+    --bs-card-bg: var(--surface);
+    --bs-card-border-color: var(--line);
+    --bs-list-group-bg: transparent;
+    --bs-list-group-border-color: var(--line);
+    --bs-tertiary-bg: var(--surface);
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: var(--surface-2);
+    --bs-table-color: var(--ink);
+    --bs-table-border-color: var(--line);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #E7ECF1;
+      --ink-soft: #A9B4C0;
+      --paper: #0D131C;
+      --surface: #151D29;
+      --surface-2: #1B2431;
+      --line: #29323F;
+      --boundary: #E2685A;
+      --vector: #7DA1FF;
+      --dimension: #E8A33D;
+      --measure: #4FD9C4;
+      --wash-dimension: rgba(232, 163, 61, 0.13);
+
+      --bs-body-bg-rgb: 13, 19, 28;
+      --bs-body-color-rgb: 231, 236, 241;
+      --bs-secondary-color-rgb: 169, 180, 192;
+      --bs-emphasis-color-rgb: 231, 236, 241;
+
+      --bs-primary-bg-subtle: #223055;
+      --bs-primary-border-subtle: #3E5488;
+      --bs-danger-bg-subtle: #3A241F;
+      --bs-danger-border-subtle: #74423B;
+      --bs-warning-bg-subtle: var(--wash-dimension);
+      --bs-warning-border-subtle: var(--dimension);
+      --bs-success-bg-subtle: #163430;
+      --bs-success-border-subtle: #2F6459;
+    }
+    body { color-scheme: dark; }
+  }
+
+  h1, h2, h3, .card-title, .if-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+
+  .eyebrow {
+    font-size: .78rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--bs-warning);
+    font-weight: 600;
+  }
+
+  .if-mark { width: 2.2rem; height: auto; display: block; }
+  .brand-plate {
+    background: #fff;
+    border-radius: 6px;
+    padding: .25rem;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .if-name { font-weight: 800; font-size: .85rem; letter-spacing: .01em; line-height: 1.15; }
+  .if-sub { font-size: .74rem; color: var(--bs-secondary-color); line-height: 1.2; }
+  .prof-line { font-family: var(--font-math); font-style: italic; }
+
+  .resource-desc { color: var(--bs-secondary-color); font-size: .85rem; }
+  .ext-icon { font-size: .8em; }
+  .due-badge { font-family: var(--font-mono); }
+
+  /* Quick nav */
+  .quicknav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .quicknav a {
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    font-size: .85rem;
+    font-weight: 600;
+    padding: .6rem .1rem;
+    white-space: nowrap;
+  }
+  .quicknav a:hover { color: var(--vector); }
+  .quicknav-scroll { overflow-x: auto; }
+
+  section[id], h2[id] { scroll-margin-top: 3.25rem; }
+
+  .stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4em;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: .25rem .75rem;
+  }
+
+  .biblio-list { font-size: .88rem; color: var(--ink-soft); padding-left: 1.1rem; }
+  .biblio-list li { margin-bottom: .5rem; }
+
+  footer.closing a { color: var(--bs-secondary-color); }
+</style>
+</head>
+<body>
+
+<nav class="navbar bg-body border-bottom">
+  <div class="container-lg px-4">
+    <div class="d-flex align-items-center gap-2">
+      <span class="brand-plate d-flex">
+        <svg class="if-mark" viewBox="0 0 114 154" role="img" aria-label="Instituto Federal do Espírito Santo">
+          <circle cx="17" cy="17" r="17" fill="#CC181F"></circle>
+          <rect x="40" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="80" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="0" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="40" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="0" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="40" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="80" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="0" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+          <rect x="40" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        </svg>
+      </span>
+      <span>
+        <span class="if-name d-block">INSTITUTO FEDERAL</span>
+        <span class="if-sub d-block">Espírito Santo · Campus Serra</span>
+      </span>
+    </div>
+    <div class="ms-auto text-end">
+      <div class="fw-semibold small">Aprendizado Profundo para Reconhecimento Visual</div>
+      <div class="prof-line small text-body-secondary">Prof. Thiago M. Paixão</div>
+    </div>
+  </div>
+</nav>
+
+<div class="quicknav">
+  <div class="container-lg px-4 quicknav-scroll">
+    <div class="d-flex gap-4">
+      <a href="#aulas">Aulas</a>
+      <a href="#atividades">Atividades</a>
+      <a href="#sobre">Sobre a disciplina</a>
+      <a href="#bibliografia">Bibliografia</a>
+    </div>
+  </div>
+</div>
+
+<main class="container-lg px-4 py-4 py-md-5">
+
+  <p class="eyebrow mb-2">Página do curso</p>
+  <h1 class="display-5 mb-5">Aprendizado Profundo para Reconhecimento Visual</h1>
+
+  <h2 id="aulas" class="h4 mb-2">Aulas</h2>
+  <p class="resource-desc mb-3">Quintas-feiras, 19h–22h · Sl. 506 (Bloco V)</p>
+
+  <div class="table-responsive mb-5">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th scope="col">Aula</th>
+          <th scope="col">Tópico</th>
+          <th scope="col">Materiais</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge text-bg-secondary rounded-pill">01</span></td>
+          <td><strong>Introdução</strong></td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_1.pdf" target="_blank" rel="noopener">Slides 1 ↗</a>
+              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_2.pdf" target="_blank" rel="noopener">Slides 2 ↗</a>
+              <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none" href="https://colab.research.google.com/github/cs231n/cs231n.github.io/blob/master/python-colab.ipynb" target="_blank" rel="noopener" title="Tutorial de Python e NumPy do CS231n.">Python Tutorial ↗</a>
+              <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none" href="https://colab.research.google.com/drive/16aPh1umJcpdo6lSkyM_VOOaw3Bp4uMrF?usp=drive_link" target="_blank" rel="noopener" title="Noções básicas sobre representação de imagens (RGB, grayscale) como um array de pixels.">Image Representation ↗</a>
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="https://www.youtube.com/watch?v=vT1JzLTH4G4&list=PLSVEhWrZWDHQTBmWZufjxpw3s8sveJtnJ" target="_blank" rel="noopener" title="AJUSTAR.">History of Vision ↗</a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="badge text-bg-secondary rounded-pill">02</span></td>
+          <td><strong>Classificação de imagens</strong></td>
+          <td>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/produto-escalar/">Produto escalar</a>
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/fronteira-decisao/">Fronteira de decisão</a>
+            </div>
+          </td>
+        </tr>
+        <tr class="text-body-secondary">
+          <td><span class="badge text-bg-secondary rounded-pill">03</span></td>
+          <td>Regularização e otimização</td>
+          <td class="fst-italic">Em breve</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 id="atividades" class="h4 mb-3">Atividades</h2>
+  <p class="resource-desc mb-3">Atividades práticas (AP) usando Jupyter Notebook — soma 100 pontos.</p>
+  <div class="table-responsive mb-3">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th scope="col">Instrumento</th>
+          <th scope="col">Conteúdo</th>
+          <th scope="col" class="text-end">Pontos</th>
+          <th scope="col" class="text-end">Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>AP1</td><td>Classificação linear</td><td class="text-end">10</td><td class="text-end">10/09/2026</td></tr>
+        <tr><td>AP2</td><td>Classificação com redes neurais (MLP)</td><td class="text-end">15</td><td class="text-end">01/10/2026</td></tr>
+        <tr><td>AP3</td><td>Classificação com redes convolucionais</td><td class="text-end">20</td><td class="text-end">22/10/2026</td></tr>
+        <tr><td>AP4</td><td>Classificação com ViTs</td><td class="text-end">25</td><td class="text-end">12/11/2026</td></tr>
+        <tr><td>Mini projeto</td><td>Livre escolha</td><td class="text-end">30</td><td class="text-end">03/12/2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert d-flex flex-wrap justify-content-between align-items-center gap-3 mb-5"
+       style="background:var(--bs-warning-bg-subtle); border:1px solid var(--bs-warning-border-subtle); border-left:4px solid var(--bs-warning);" role="alert">
+    <div>
+      <div class="text-uppercase small fw-bold" style="color:var(--bs-warning); letter-spacing:.05em;">Atividade extra</div>
+      <div class="fw-semibold"><a href="../atividades/exercicios-numpy/">Exercícios NumPy (5 pontos extra)</a></div>
+      <div class="small text-body-secondary">Nesta atividade, você será introduzido aos conceitos básicos de programação vetorial com NumPy.</div>
+    </div>
+    <span class="badge rounded-pill due-badge" style="background:var(--bs-warning); color:#1A1200;">Prazo · 01/09/2026</span>
+  </div>
+
+  <h2 id="sobre" class="h4 mb-3">Sobre a disciplina</h2>
+  <p class="resource-desc fst-italic mb-5">Em breve.</p>
+
+  <h2 id="bibliografia" class="h4 mb-3">Bibliografia</h2>
+  <p class="resource-desc fst-italic mb-5">Em breve.</p>
+
+  <footer class="closing border-top pt-3 text-body-secondary small" style="max-width:40rem;">
+    <p>
+      Os slides de aula seguem, com adaptações, o material do curso
+      <a href="https://cs231n.stanford.edu/" target="_blank" rel="noopener">CS231n: Deep Learning for Computer Vision</a>,
+      Stanford University. Os links de slides acima apontam para a fonte oficial — os direitos
+      autorais dos slides pertencem aos autores originais do CS231n.
+    </p>
+    <p class="mb-0">Material do Instituto Federal do Espírito Santo — Campus Serra.</p>
+  </footer>
+
+</main>
+
+</body>
+</html>
