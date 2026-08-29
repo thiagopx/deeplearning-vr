@@ -187,6 +187,56 @@
     max-width: 42rem;
   }
 
+  .section-title {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 2.75rem 0 1rem;
+    text-wrap: balance;
+  }
+  .section-title:first-of-type { margin-top: 0.5rem; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+    max-width: 56rem;
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.1rem 1.3rem;
+  }
+
+  .info-card h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.05rem;
+    margin: 0 0 0.7rem;
+  }
+
+  .info-card p { margin: 0 0 0.35rem; font-size: 0.92rem; color: var(--ink-soft); }
+  .info-card p:last-child { margin-bottom: 0; }
+  .info-card a { color: var(--vector); }
+
+  .info-card .resource-list { gap: 0.45rem; }
+  .info-card .resource-list li { font-size: 0.92rem; color: var(--ink-soft); }
+  .info-card .resource-list a { color: var(--ink); }
+
+  .desc { color: var(--ink-soft); }
+  .due { color: var(--ink-faint); font-size: 0.85rem; }
+
+  .activity + .activity {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line);
+  }
+  .activity-title { font-weight: 600; margin: 0 0 0.2rem; color: var(--ink); }
+  .activity-links { display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin-top: 0.5rem; }
+  .activity-links a { font-size: 0.88rem; }
+
   .lesson-list {
     list-style: none;
     margin: 2.25rem 0 0;
@@ -334,6 +384,48 @@
     </p>
   </div>
 
+  <h2 class="section-title">Informações gerais</h2>
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Professor</h3>
+      <p>Thiago Meireles Paixão (PX)</p>
+      <p>Sala 912S · <a href="mailto:thiago.paixao@ifes.edu.br">thiago.paixao@ifes.edu.br</a></p>
+      <p class="due">Atendimento: Combinar via E-mail ou Telegram</p>
+    </div>
+
+    <div class="info-card">
+      <h3>Documentos do curso</h3>
+      <ul class="resource-list">
+        <li><a href="plano-de-ensino_aprendizado-de-m%C3%A1quina_2026-2.pdf" target="_blank" rel="noopener">Plano de Ensino <span class="ext-icon">↗</span></a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/1r0c3KRGs3OotDTYkdnn97YXX3Z1Qp_XGxXF1Er_yNrE/edit#gid=178974876" target="_blank" rel="noopener">Planejamento das Aulas <span class="ext-icon">↗</span></a></li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3>Canais de comunicação</h3>
+      <ul class="resource-list">
+        <li><a href="https://t.me/+dufOuMuQ0EhjNDBh" target="_blank" rel="noopener">Telegram <span class="ext-icon">↗</span></a> <span class="desc">— Para anúncios e avisos regulares</span></li>
+        <li>Fóruns Online (AVA) <span class="desc">— Para dúvidas e discussões do conteúdo</span></li>
+        <li>E-mail Direto <span class="desc">— Para assuntos individuais e importantes</span></li>
+        <li><a href="https://academico.ifes.edu.br/" target="_blank" rel="noopener">Sistema Acadêmico <span class="ext-icon">↗</span></a> <span class="desc">— Para anúncios e avisos críticos</span></li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3>Atividades</h3>
+      <div class="activity">
+        <p class="activity-title">Exercícios NumPy (5 pontos extra)</p>
+        <p>Nesta atividade, você será introduzido aos conceitos básicos de programação.</p>
+        <p class="due">Prazo: 01/09/2026</p>
+        <p class="activity-links">
+          <a href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151998" target="_blank" rel="noopener">Enviar (Graduação) <span class="ext-icon">↗</span></a>
+          <a href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151427" target="_blank" rel="noopener">Enviar (Mestrado) <span class="ext-icon">↗</span></a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Aulas</h2>
   <ol class="lesson-list">
     <li class="lesson">
       <div class="lesson-num">01</div>
@@ -343,9 +435,9 @@
           <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_1.pdf" target="_blank" rel="noopener"><span class="tag tag-pdf">PDF</span> Slides — parte 1 <span class="src">(Stanford CS231n) <span class="ext-icon">↗</span></span></a></li>
           <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_2.pdf" target="_blank" rel="noopener"><span class="tag tag-pdf">PDF</span> Slides — parte 2 <span class="src">(Stanford CS231n) <span class="ext-icon">↗</span></span></a></li>
           <li><a href="https://drive.google.com/drive/folders/18bfceO07pR9EZyDm7rq6B9tkrQ5DiIfR?usp=sharing" target="_blank" rel="noopener"><span class="tag tag-nb">Notebook</span> Notebooks (Google Drive) <span class="ext-icon">↗</span></a></li>
-          <li><a href="https://colab.research.google.com/github/thiagopx/deeplearning-vr/blob/main/01_intro/CS231n%20Python%20Tutorial%20With%20Google%20Colab.ipynb" target="_blank" rel="noopener"><span class="tag tag-nb">Notebook</span> CS231n Python Tutorial With Google Colab <span class="ext-icon">↗</span></a></li>
-          <li><a href="https://colab.research.google.com/github/thiagopx/deeplearning-vr/blob/main/01_intro/Exerc%C3%ADcios%20Numpy.ipynb" target="_blank" rel="noopener"><span class="tag tag-nb">Notebook</span> Exercícios Numpy <span class="ext-icon">↗</span></a></li>
-          <li><a href="https://colab.research.google.com/github/thiagopx/deeplearning-vr/blob/main/01_intro/Image%20Representation.ipynb" target="_blank" rel="noopener"><span class="tag tag-nb">Notebook</span> Image Representation <span class="ext-icon">↗</span></a></li>
+          <li><a href="https://github.com/thiagopx/deeplearning-vr/tree/main/01_intro/" target="_blank" rel="noopener"><span class="tag tag-nb">Notebook</span> Notebooks (GitHub) <span class="ext-icon">↗</span></a></li>
+          <li><span class="tag tag-nb">Notebook</span> <strong>CS231n Python Tutorial With Google Colab</strong> <span class="desc">— Tutorial de Python e NumPy do CS231n, adaptado para rodar no Google Colab.</span></li>
+          <li><span class="tag tag-nb">Notebook</span> <strong>Image Representation</strong> <span class="desc">— Como uma imagem é representada como array de pixels.</span></li>
         </ul>
       </div>
     </li>
