@@ -172,6 +172,21 @@
   .biblio-list li { margin-bottom: .5rem; }
 
   footer.closing a { color: var(--bs-secondary-color); }
+  footer.closing p { margin-bottom: .75rem; }
+
+  .badge-stack {
+    display: inline-flex !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: .1rem;
+    line-height: 1.3;
+  }
+  .badge-author {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    font-weight: 500;
+    opacity: .75;
+  }
 </style>
 </head>
 <body>
@@ -239,14 +254,14 @@
           <td><strong>Introdução</strong></td>
           <td>
             <div class="d-flex flex-wrap gap-2">
-              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_1.pdf" target="_blank" rel="noopener">Slides 1 ↗</a>
-              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_2.pdf" target="_blank" rel="noopener">Slides 2 ↗</a>
-              <span class="d-inline-flex align-items-center gap-1">
-                <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none" href="https://colab.research.google.com/github/cs231n/cs231n.github.io/blob/master/python-colab.ipynb" target="_blank" rel="noopener" title="Tutorial de Python e NumPy do CS231n.">Python Tutorial ↗</a>
-                <span class="badge rounded-pill" style="background:var(--surface-2); color:var(--ink-soft); font-weight:500;">CS231n</span>
-              </span>
-              <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none" href="https://colab.research.google.com/drive/16aPh1umJcpdo6lSkyM_VOOaw3Bp4uMrF?usp=drive_link" target="_blank" rel="noopener" title="Noções básicas sobre representação de imagens (RGB, grayscale) como um array de pixels.">Image Representation ↗</a>
-              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="https://www.youtube.com/watch?v=vT1JzLTH4G4&list=PLSVEhWrZWDHQTBmWZufjxpw3s8sveJtnJ" target="_blank" rel="noopener" title="AJUSTAR.">History of Vision ↗</a>
+              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_1.pdf" target="_blank" rel="noopener">📄 Slides 1 ↗</a>
+              <a class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle text-decoration-none" href="https://cs231n.stanford.edu/slides/2026/lecture_1_part_2.pdf" target="_blank" rel="noopener">📄 Slides 2 ↗</a>
+              <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none badge-stack" href="https://colab.research.google.com/github/cs231n/cs231n.github.io/blob/master/python-colab.ipynb" target="_blank" rel="noopener" title="Tutorial de Python e NumPy do CS231n.">
+                <span>📓 Python Tutorial ↗</span>
+                <span class="badge-author">CS231n</span>
+              </a>
+              <a class="badge bg-success-subtle text-success-emphasis border border-success-subtle text-decoration-none" href="https://colab.research.google.com/drive/16aPh1umJcpdo6lSkyM_VOOaw3Bp4uMrF?usp=drive_link" target="_blank" rel="noopener" title="Noções básicas sobre representação de imagens (RGB, grayscale) como um array de pixels.">📓 Image Representation ↗</a>
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="https://www.youtube.com/watch?v=vT1JzLTH4G4&list=PLSVEhWrZWDHQTBmWZufjxpw3s8sveJtnJ" target="_blank" rel="noopener" title="AJUSTAR.">🎥 History of Vision ↗</a>
             </div>
           </td>
         </tr>
@@ -255,8 +270,9 @@
           <td><strong>Classificação de imagens</strong></td>
           <td>
             <div class="d-flex flex-wrap gap-2">
-              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/produto-escalar/">Produto escalar</a>
-              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/fronteira-decisao/">Fronteira de decisão</a>
+              <a class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-decoration-none" href="notas-aula/classificacao/" title="Notas de aula traduzidas (Português, geradas por IA) — Classificação de Imagens e Classificação Linear.">📘 Notas de aula</a>
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/produto-escalar/">🌐 Produto escalar</a>
+              <a class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle text-decoration-none" href="../02_image-classification/fronteira-decisao/">🌐 Fronteira de decisão</a>
             </div>
           </td>
         </tr>
@@ -309,12 +325,17 @@
 
   <footer class="closing border-top pt-3 text-body-secondary small" style="max-width:40rem;">
     <p>
-      Os slides de aula seguem, com adaptações, o material do curso
+      Os slides de aula são os originais do curso
       <a href="https://cs231n.stanford.edu/" target="_blank" rel="noopener">CS231n: Deep Learning for Computer Vision</a>,
-      Stanford University. Os links de slides acima apontam para a fonte oficial — os direitos
-      autorais dos slides pertencem aos autores originais do CS231n.
+      Stanford University, usados na íntegra — os links acima apontam diretamente para a fonte
+      oficial, sem nenhuma adaptação. Os direitos autorais dos slides pertencem aos autores
+      originais do CS231n.
     </p>
-    <p class="mb-0">Material do Instituto Federal do Espírito Santo — Campus Serra.</p>
+    <p class="mb-0">
+      Algumas aulas têm notas traduzidas automaticamente por IA para português, pensadas para
+      facilitar o acompanhamento dos alunos — essas páginas sempre apontam para o conteúdo
+      original em inglês, com aviso de tradução automática no início.
+    </p>
   </footer>
 
 </main>
