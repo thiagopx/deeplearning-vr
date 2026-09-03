@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Exercícios Práticos: NumPy</title>
-<meta name="description" content="Enunciado da atividade extra Exercícios Práticos: NumPy — Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<title>Exercício Numpy (extra)</title>
+<meta name="description" content="Enunciado da atividade extra Exercício Numpy — Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <style>
   :root {
@@ -14,10 +14,8 @@
     --surface: #FFFFFF;
     --surface-2: #E9ECEC;
     --line: #D6DBDC;
-    --boundary: #B23A2E;
     --vector: #2451C4;
     --dimension: #A66A16;
-    --measure: #1E7F72;
     --wash-dimension: rgba(166, 106, 22, 0.08);
 
     --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
@@ -63,10 +61,8 @@
       --surface: #151D29;
       --surface-2: #1B2431;
       --line: #29323F;
-      --boundary: #E2685A;
       --vector: #7DA1FF;
       --dimension: #E8A33D;
-      --measure: #4FD9C4;
       --wash-dimension: rgba(232, 163, 61, 0.13);
 
       --bs-body-bg-rgb: 13, 19, 28;
@@ -90,7 +86,7 @@
   .if-sub { font-size: .74rem; color: var(--bs-secondary-color); line-height: 1.2; }
   .prof-line { font-family: var(--font-math); font-style: italic; }
 
-  .due-badge { font-family: var(--font-mono); }
+  .meta-badge { font-family: var(--font-mono); }
   .step-list li { margin-bottom: .5rem; }
 </style>
 </head>
@@ -129,20 +125,20 @@
 
   <a href="../../index.html#atividades" class="d-inline-block mb-4 small">← Voltar à página do curso</a>
 
-  <h1 class="display-6 mb-2">🐍 Exercícios Práticos: NumPy</h1>
-  <span class="badge rounded-pill due-badge mb-4" style="background:var(--bs-warning); color:#1A1200;">Entrega: 01 de Setembro</span>
+  <h1 class="display-6 mb-2">Exercício Numpy (extra)</h1>
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <span class="badge rounded-pill meta-badge" style="background:var(--bs-warning); color:#1A1200;">5 pts</span>
+    <span class="badge rounded-pill meta-badge text-body-secondary" style="background:var(--surface-2); border:1px solid var(--line);">Prazo · 11/09/2026</span>
+  </div>
 
   <h2 class="h5 mt-4">O Desafio</h2>
   <p>
     Edite o notebook de exercícios para solucionar os problemas de computação
     científica e manipulação de matrizes utilizando a biblioteca NumPy.
   </p>
+  <p><strong>Notebook:</strong> <a href="https://colab.research.google.com/drive/1xVrIPVWlG5eM4HOLjTcQOKNT80TFO0Ey?usp=drive_link" target="_blank" rel="noopener">Acessar Notebook no Google Colab</a></p>
 
-  <a class="btn btn-primary btn-lg my-3" href="https://colab.research.google.com/github/thiagopx/deeplearning-vr/blob/main/01_intro/Exerc%C3%ADcios%20Numpy.ipynb" target="_blank" rel="noopener">
-    📂 Acessar Notebook no Google Colab
-  </a>
-
-  <h2 class="h5 mt-4">⚙️ Instruções para Envio</h2>
+  <h2 class="h5 mt-4">Instruções para Envio</h2>
   <ol class="step-list">
     <li>Abra o notebook no Google Colab e salve uma cópia no seu Google Drive (Arquivo → Salvar uma cópia no Drive).</li>
     <li>Implemente as soluções para cada uma das questões de código propostas.</li>
@@ -150,15 +146,18 @@
     <li>Submeta o link do seu notebook no Colab no campo de envio do AVA.</li>
   </ol>
 
-  <h2 class="h5 mt-4">📅 Cronograma</h2>
-  <p>Data Limite: <strong>01 de Setembro de 2026, às 23h59.</strong></p>
+  <h2 class="h5 mt-4">Enviar no AVA</h2>
+  <ul>
+    <li>Graduação: <a href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151998" target="_blank" rel="noopener">https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151998</a></li>
+    <li>Mestrado: <a href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151427" target="_blank" rel="noopener">https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151427</a></li>
+  </ul>
 
   <div class="card mt-4">
     <div class="card-body">
-      <h2 class="h6 card-title">Enviar no AVA</h2>
-      <div class="d-flex flex-wrap gap-3">
-        <a class="fw-semibold" href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151998" target="_blank" rel="noopener">Graduação ↗</a>
-        <a class="fw-semibold" href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151427" target="_blank" rel="noopener">Mestrado ↗</a>
+      <h2 class="h6 card-title">Enviar</h2>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151998" target="_blank" rel="noopener">Enviar — Graduação ↗</a>
+        <a class="btn btn-primary" href="https://ava3.cefor.ifes.edu.br/mod/assign/view.php?id=1151427" target="_blank" rel="noopener">Enviar — Mestrado ↗</a>
       </div>
     </div>
   </div>
