@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regularização e Otimização — Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Notas de aula sobre otimização (descida do gradiente) — tradução para português (gerada por IA) do material do curso CS231n, Stanford University. Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<style>
+  :root{
+    /* ⚠️ PLACEHOLDER — spec/index.md ainda não tem o hex oficial do verde
+       institucional do Ifes confirmado (ifes.edu.br/download-de-marcas).
+       Estes dois tons são um verde genérico de espera, NÃO a cor oficial —
+       trocar assim que o hex real for confirmado. */
+    --ifes-verde: #3a9169;
+    --ifes-verde-escuro: #256b4a;
+    --tinta: #1c1c1c;
+    --fundo: #0e1414;
+    --fundo-card: #172020;
+    --muted: #8a978f;
+
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--fundo);
+    color: #e7ece9;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  a { color: var(--ifes-verde); }
+  a:visited { color: var(--ifes-verde); }
+
+  .topbar{
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid #22302a;
+    font-size: .85rem;
+  }
+  .topbar a{ color: var(--muted); text-decoration: none; }
+  .topbar a:hover{ color: var(--ifes-verde); }
+
+  main{
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .6rem;
+  }
+  .section-header{
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .section-badge{
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .9rem;
+    background: var(--fundo-card);
+    color: var(--ifes-verde);
+    border: 1px solid #22302a;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2{ font-size: 1.6rem; margin: 0; }
+  h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
+  h3{ font-size: 1.3rem; margin-top: 2.5rem; }
+  h4{ font-size: 1.1rem; margin-top: 2rem; color: #d6ded9; }
+  h5{ font-size: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+  .ai-disclaimer{
+    display: flex;
+    gap: .6rem;
+    background: var(--fundo-card);
+    border: 1px solid #2a3a32;
+    border-left: 3px solid var(--ifes-verde);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    color: #cdd6d1;
+    margin-bottom: 2rem;
+  }
+
+  .source-credit{
+    font-size: .82rem;
+    color: var(--muted);
+    border-top: 1px solid #22302a;
+    padding-top: .6rem;
+    margin-top: 3rem;
+  }
+  .translated-source:first-of-type .source-credit{ margin-top: 0; }
+  .source-credit a{ text-decoration: none; }
+  .source-credit a:hover{ text-decoration: underline; }
+
+  .toc{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-size: .88rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc p{ margin: 0 0 .5rem; color: var(--muted); text-transform: uppercase; font-size: .74rem; letter-spacing: .06em; }
+  .toc ul{ margin: 0; padding-left: 1.1rem; }
+  .toc li{ margin: .2rem 0; }
+  .toc a{ text-decoration: none; }
+  .toc a:hover{ text-decoration: underline; }
+
+  p{ margin: 0 0 1rem; }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: .4rem; }
+  strong{ color: #f1f5f2; }
+  em{ font-style: italic; }
+
+  code{
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--fundo-card);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  pre{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+  }
+  pre code{ background: none; padding: 0; font-size: .84em; line-height: 1.55; }
+
+  figure{ margin: 1.5rem 0; text-align: center; }
+  figure img{ max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #22302a; }
+  figure.fig-left{ text-align: left; }
+  figcaption{ font-size: .82rem; color: var(--muted); margin-top: .6rem; text-align: left; }
+
+  blockquote{
+    margin: 1.5rem 0;
+    padding: .8rem 1.1rem;
+    border-left: 3px solid var(--ifes-verde);
+    background: var(--fundo-card);
+    color: #d6ded9;
+    font-style: italic;
+  }
+  blockquote p:last-child{ margin-bottom: 0; }
+
+  .material-group{ margin-top: 2.5rem; }
+  .material-group h3{ margin-top: 0; font-size: 1.1rem; }
+  .material-group ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-start; }
+  .material-group li{ margin: 0; }
+  .material-group a{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 12px;
+    padding: .4rem .85rem;
+    font-size: .85rem;
+    text-decoration: none;
+    color: #e7ece9;
+  }
+  .material-group a:hover{ border-color: var(--ifes-verde); }
+  .material-group .icon{ margin-right: .3em; }
+  .material-group .source{ color: var(--muted); font-size: .82em; }
+  .material-group .material-author{
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--muted);
+    line-height: 1;
+  }
+
+  @media (max-width: 600px){
+    main{ padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head><body>
+
+<div class="topbar">
+  <a href="../../index.html">← Voltar à página do curso</a>
+</div>
+
+<main>
+  <section class="section-block" id="03_regularization-optimization">
+    <header class="section-header-wrap">
+      <p class="eyebrow">Aula 03 · Regularização</p>
+      <div class="section-header">
+        <span class="section-badge">03</span>
+        <h2>Regularização e Otimização</h2>
+      </div>
+    </header>
+
+    <div class="translated-notes">
+      <p class="ai-disclaimer">⚠️ Este conteúdo é uma tradução para português, gerada automaticamente por IA, a partir do material original em inglês do curso CS231n (Stanford University). Consulte o link "Fonte original" abaixo para o texto original.</p>
+
+      <section class="translated-source" id="fonte-optimization-1">
+        <p class="source-credit">Fonte original (inglês): <a href="https://cs231n.github.io/optimization-1/" target="_blank" rel="noopener">Optimization: Stochastic Gradient Descent · CS231n, Stanford University ↗</a></p>
+
+        <nav class="toc">
+          <p>Nesta seção</p>
+          <ul>
+            <li><a href="#intro">Introdução</a></li>
+            <li><a href="#vis">Visualizando a função de perda</a></li>
+            <li><a href="#optimization">Otimização</a>
+              <ul>
+                <li><a href="#opt1">Estratégia #1: Busca aleatória</a></li>
+                <li><a href="#opt2">Estratégia #2: Busca local aleatória</a></li>
+                <li><a href="#opt3">Estratégia #3: Seguindo o gradiente</a></li>
+              </ul>
+            </li>
+            <li><a href="#gradcompute">Calculando o gradiente</a>
+              <ul>
+                <li><a href="#numerical">Numericamente, com diferenças finitas</a></li>
+                <li><a href="#analytic">Analiticamente, com cálculo</a></li>
+              </ul>
+            </li>
+            <li><a href="#gd">Descida do gradiente</a></li>
+            <li><a href="#summary">Resumo</a></li>
+          </ul>
+        </nav>
+
+        <h3 id="intro">Introdução</h3>
+
+        <p>Na seção anterior, apresentamos dois componentes-chave no contexto da tarefa de classificação de imagens:</p>
+
+        <ol>
+          <li>Uma <strong>função de pontuação</strong> (parametrizada) que mapeia os pixels brutos da imagem para pontuações de classe (por exemplo, uma função linear)</li>
+          <li>Uma <strong>função de perda</strong> que mede a qualidade de um conjunto particular de parâmetros com base em quão bem as pontuações induzidas concordavam com os rótulos de verdade (ground truth) nos dados de treinamento. Vimos que há muitas formas e versões disso (por exemplo, Softmax/SVM).</li>
+        </ol>
+
+        <p>Concretamente, relembre que a função linear tinha a forma \( f(x_i, W) =  W x_i \) e a SVM que desenvolvemos foi formulada como:</p>
+
+        <p>$$
+        L = \frac{1}{N} \sum_i \sum_{j\neq y_i} \left[ \max(0, f(x_i; W)_j - f(x_i; W)_{y_i} + 1) \right] + \alpha R(W)
+        $$</p>
+
+        <p>Vimos que uma configuração dos parâmetros \(W\) que produzisse previsões para exemplos \(x_i\) consistentes com seus rótulos de verdade \(y_i\) também teria uma perda \(L\) muito baixa. Vamos agora introduzir o terceiro e último componente-chave: a <strong>otimização</strong>. Otimização é o processo de encontrar o conjunto de parâmetros \(W\) que minimiza a função de perda.</p>
+
+        <p><strong>Antecipando o que vem a seguir:</strong> assim que entendermos como esses três componentes centrais interagem, vamos revisitar o primeiro componente (o mapeamento de função parametrizado) e estendê-lo para funções bem mais complicadas que um mapeamento linear: primeiro Redes Neurais inteiras, e depois Redes Neurais Convolucionais. As funções de perda e o processo de otimização permanecerão relativamente inalterados.</p>
+
+        <h3 id="vis">Visualizando a função de perda</h3>
+
+        <p>As funções de perda que vamos analisar nesta disciplina costumam ser definidas sobre espaços de altíssima dimensionalidade (por exemplo, no CIFAR-10, a matriz de pesos de um classificador linear tem tamanho [10 x 3073], totalizando 30.730 parâmetros), o que torna difícil visualizá-las. No entanto, ainda podemos ganhar alguma intuição fatiando o espaço de alta dimensionalidade ao longo de raios (1 dimensão), ou ao longo de planos (2 dimensões). Por exemplo, podemos gerar uma matriz de pesos aleatória \(W\) (que corresponde a um único ponto no espaço), e então caminhar ao longo de um raio, registrando o valor da função de perda ao longo do caminho. Ou seja, podemos gerar uma direção aleatória \(W_1\) e calcular a perda ao longo dessa direção avaliando \(L(W + a W_1)\) para diferentes valores de \(a\). Esse processo gera um gráfico simples, com o valor de \(a\) no eixo x e o valor da função de perda no eixo y. Também podemos realizar o mesmo procedimento em duas dimensões, avaliando a perda \( L(W + a W_1 + b W_2) \) enquanto variamos \(a, b\). Em um gráfico, \(a, b\) poderiam então corresponder ao eixo x e ao eixo y, e o valor da função de perda pode ser visualizado com uma cor:</p>
+
+        <figure>
+          <img src="assets/svm1d.png" alt="Perda 1D da SVM">
+          <img src="assets/svm_one.jpg" alt="Fatia 2D da perda, um único exemplo">
+          <img src="assets/svm_all.jpg" alt="Fatia 2D da perda, cem exemplos">
+          <figcaption>Paisagem da função de perda para a SVM multiclasse (sem regularização), para um único exemplo (esquerda, meio) e para cem exemplos (direita) no CIFAR-10. Esquerda: perda unidimensional, variando apenas <strong>a</strong>. Meio, Direita: fatia bidimensional da perda; Azul = perda baixa, Vermelho = perda alta. Note a estrutura linear por partes da função de perda. As perdas de múltiplos exemplos são combinadas pela média, então o formato de tigela à direita é a média de muitas tigelas lineares por partes (como a do meio).</figcaption>
+        </figure>
+
+        <p>Podemos explicar a estrutura linear por partes da função de perda examinando a matemática. Para um único exemplo, temos:</p>
+
+        <p>$$
+        L_i = \sum_{j\neq y_i} \left[ \max(0, w_j^Tx_i - w_{y_i}^Tx_i + 1) \right]
+        $$</p>
+
+        <p>Fica claro pela equação que a perda de dados de cada exemplo é uma soma de funções lineares de \(W\) (zeradas por baixo, devido à função \(\max(0,-)\)). Além disso, cada linha de \(W\) (ou seja, \(w_j\)) às vezes tem um sinal positivo à sua frente (quando corresponde a uma classe errada para um exemplo), e às vezes um sinal negativo (quando corresponde à classe correta para esse exemplo). Para deixar isso mais explícito, considere um conjunto de dados simples que contém três pontos 1-dimensionais e três classes. A perda SVM completa (sem regularização) se torna:</p>
+
+        <p>$$
+        \begin{align}
+        L_0 = & \max(0, w_1^Tx_0 - w_0^Tx_0 + 1) + \max(0, w_2^Tx_0 - w_0^Tx_0 + 1) \\\\
+        L_1 = & \max(0, w_0^Tx_1 - w_1^Tx_1 + 1) + \max(0, w_2^Tx_1 - w_1^Tx_1 + 1) \\\\
+        L_2 = & \max(0, w_0^Tx_2 - w_2^Tx_2 + 1) + \max(0, w_1^Tx_2 - w_2^Tx_2 + 1) \\\\
+        L = & (L_0 + L_1 + L_2)/3
+        \end{align}
+        $$</p>
+
+        <p>Como esses exemplos são 1-dimensionais, os dados \(x_i\) e os pesos \(w_j\) são números. Olhando, por exemplo, para \(w_0\), alguns dos termos acima são funções lineares de \(w_0\) e cada um deles é limitado (clamped) em zero. Podemos visualizar isso da seguinte forma:</p>
+
+        <figure>
+          <img src="assets/svmbowl.png" alt="Ilustração 1D da perda de dados">
+          <figcaption>Ilustração unidimensional da perda de dados. O eixo x é um único peso e o eixo y é a perda. A perda de dados é uma soma de múltiplos termos, cada um dos quais ou é independente de um peso em particular, ou é uma função linear dele, limitada em zero. A perda de dados completa da SVM é uma versão de 30.730 dimensões desse formato.</figcaption>
+        </figure>
+
+        <p>Como observação lateral, você deve ter suspeitado, pelo seu formato de tigela, que a função de custo da SVM é um exemplo de <a href="http://en.wikipedia.org/wiki/Convex_function" target="_blank" rel="noopener">função convexa</a>. Há uma grande quantidade de literatura dedicada a minimizar eficientemente esses tipos de funções, e você também pode fazer uma disciplina de Stanford sobre o tema (<a href="http://stanford.edu/~boyd/cvxbook/" target="_blank" rel="noopener">otimização convexa</a>). Uma vez que estendermos nossas funções de pontuação \(f\) para Redes Neurais, nossas funções objetivo se tornarão não convexas, e as visualizações acima não mostrarão tigelas, mas terrenos complexos e acidentados.</p>
+
+        <p><em>Funções de perda não diferenciáveis.</em> Como nota técnica, você também pode notar que as <em>dobras</em> na função de perda (devido à operação de máximo) tecnicamente tornam a função de perda não diferenciável, porque nessas dobras o gradiente não é definido. No entanto, o <a href="http://en.wikipedia.org/wiki/Subderivative" target="_blank" rel="noopener">subgradiente</a> ainda existe e é comumente usado em seu lugar. Nesta disciplina, usaremos os termos <em>subgradiente</em> e <em>gradiente</em> de forma intercambiável.</p>
+
+        <h3 id="optimization">Otimização</h3>
+
+        <p>Para reiterar, a função de perda nos permite quantificar a qualidade de qualquer conjunto particular de pesos <strong>W</strong>. O objetivo da otimização é encontrar <strong>W</strong> que minimize a função de perda. Vamos agora motivar e desenvolver aos poucos uma abordagem para otimizar a função de perda. Para quem já chega a esta disciplina com experiência prévia, esta seção pode parecer estranha, já que o exemplo de trabalho que usaremos (a perda SVM) é um problema convexo, mas tenha em mente que nosso objetivo é, eventualmente, otimizar Redes Neurais, para as quais não podemos usar facilmente nenhuma das ferramentas desenvolvidas na literatura de Otimização Convexa.</p>
+
+        <h4 id="opt1">Estratégia #1: uma primeira ideia bem ruim: busca aleatória</h4>
+
+        <p>Já que é tão simples verificar quão bom é um determinado conjunto de parâmetros <strong>W</strong>, a primeira ideia (bem ruim) que pode vir à mente é simplesmente experimentar muitos pesos aleatórios diferentes e acompanhar o que funciona melhor. Esse procedimento poderia ser assim:</p>
+
+        <pre><code># assume que X_train são os dados, onde cada coluna é um exemplo (por exemplo, 3073 x 50.000)
+# assume que Y_train são os rótulos (por exemplo, um array 1D de 50.000)
+# assume que a função L avalia a função de perda
+
+bestloss = float("inf") # Python atribui o maior valor de ponto flutuante possível
+for num in range(1000):
+  W = np.random.randn(10, 3073) * 0.0001 # gera parâmetros aleatórios
+  loss = L(X_train, Y_train, W) # calcula a perda sobre todo o conjunto de treinamento
+  if loss < bestloss: # acompanha a melhor solução
+    bestloss = loss
+    bestW = W
+  print 'in attempt %d the loss was %f, best %f' % (num, loss, bestloss)
+
+# imprime:
+# in attempt 0 the loss was 9.401632, best 9.401632
+# in attempt 1 the loss was 8.959668, best 8.959668
+# in attempt 2 the loss was 9.044034, best 8.959668
+# in attempt 3 the loss was 9.278948, best 8.959668
+# in attempt 4 the loss was 8.857370, best 8.857370
+# in attempt 5 the loss was 8.943151, best 8.857370
+# in attempt 6 the loss was 8.605604, best 8.605604
+# ... (truncado: continua por 1000 linhas)</code></pre>
+
+        <p>No código acima, vemos que experimentamos vários vetores de pesos aleatórios <strong>W</strong>, e alguns deles funcionam melhor que outros. Podemos pegar os melhores pesos <strong>W</strong> encontrados por essa busca e testá-los no conjunto de teste:</p>
+
+        <pre><code># Assume que X_test é [3073 x 10000], Y_test [10000 x 1]
+scores = Wbest.dot(Xte_cols) # 10 x 10000, as pontuações de classe para todos os exemplos de teste
+# encontra o índice com a maior pontuação em cada coluna (a classe prevista)
+Yte_predict = np.argmax(scores, axis = 0)
+# e calcula a acurácia (fração de previsões corretas)
+np.mean(Yte_predict == Yte)
+# retorna 0.1555</code></pre>
+
+        <p>Com o melhor <strong>W</strong>, isso dá uma acurácia de cerca de <strong>15,5%</strong>. Dado que adivinhar as classes completamente ao acaso atinge apenas 10%, esse não é um resultado tão ruim para uma solução de busca aleatória tão primitiva!</p>
+
+        <p><strong>Ideia central: refinamento iterativo</strong>. Claro, acontece que podemos fazer muito melhor. A ideia central é que encontrar o melhor conjunto de pesos <strong>W</strong> é um problema muito difícil, ou até impossível (especialmente quando <strong>W</strong> contém pesos de redes neurais complexas inteiras), mas o problema de refinar um conjunto específico de pesos <strong>W</strong> para que fique um pouco melhor é significativamente menos difícil. Em outras palavras, nossa abordagem será começar com um <strong>W</strong> aleatório e então refiná-lo iterativamente, tornando-o um pouco melhor a cada vez.</p>
+
+        <blockquote><p>Nossa estratégia será começar com pesos aleatórios e refiná-los iterativamente ao longo do tempo, para obter uma perda menor.</p></blockquote>
+
+        <p><strong>Analogia do caminhante vendado.</strong> Uma analogia que você pode achar útil daqui em diante é se imaginar caminhando por um terreno montanhoso, vendado, tentando chegar ao fundo. No exemplo do CIFAR-10, as montanhas são de 30.730 dimensões, já que as dimensões de <strong>W</strong> são 10 x 3073. Em cada ponto da montanha, alcançamos uma perda particular (a altura do terreno).</p>
+
+        <h4 id="opt2">Estratégia #2: busca local aleatória</h4>
+
+        <p>A primeira estratégia em que você pode pensar é tentar estender um pé em uma direção aleatória e então dar um passo somente se ele levar para baixo. Concretamente, começaremos com um \(W\) aleatório, geraremos perturbações aleatórias \( \delta W \) sobre ele e, se a perda no \(W + \delta W\) perturbado for menor, realizaremos uma atualização. O código para esse procedimento é o seguinte:</p>
+
+        <pre><code>W = np.random.randn(10, 3073) * 0.001 # gera um W inicial aleatório
+bestloss = float("inf")
+for i in range(1000):
+  step_size = 0.0001
+  Wtry = W + np.random.randn(10, 3073) * step_size
+  loss = L(Xtr_cols, Ytr, Wtry)
+  if loss < bestloss:
+    W = Wtry
+    bestloss = loss
+  print 'iter %d loss is %f' % (i, bestloss)</code></pre>
+
+        <p>Usando o mesmo número de avaliações da função de perda de antes (1000), essa abordagem atinge uma acurácia de classificação no conjunto de teste de <strong>21,4%</strong>. Isso é melhor, mas ainda desperdiça recursos e é computacionalmente caro.</p>
+
+        <h4 id="opt3">Estratégia #3: seguindo o gradiente</h4>
+
+        <p>Na seção anterior, tentamos encontrar uma direção no espaço de pesos que melhorasse nosso vetor de pesos (e nos desse uma perda menor). Acontece que não há necessidade de buscar aleatoriamente por uma boa direção: podemos calcular a <em>melhor</em> direção ao longo da qual devemos mudar nosso vetor de pesos, que é matematicamente garantida como a direção de descida mais íngreme (pelo menos no limite, à medida que o tamanho do passo tende a zero). Essa direção estará relacionada ao <strong>gradiente</strong> da função de perda. Em nossa analogia da caminhada, essa abordagem corresponde, grosso modo, a sentir a inclinação da montanha sob nossos pés e dar um passo na direção que parece mais íngreme.</p>
+
+        <p>Em funções unidimensionais, a inclinação é a taxa instantânea de variação da função em qualquer ponto de interesse. O gradiente é uma generalização da inclinação para funções que não recebem um único número, mas um vetor de números. Além disso, o gradiente é apenas um vetor de inclinações (mais comumente chamadas de <strong>derivadas</strong>) para cada dimensão no espaço de entrada. A expressão matemática para a derivada de uma função 1-D em relação à sua entrada é:</p>
+
+        <p>$$
+        \frac{df(x)}{dx} = \lim_{h\ \to 0} \frac{f(x + h) - f(x)}{h}
+        $$</p>
+
+        <p>Quando as funções de interesse recebem um vetor de números em vez de um único número, chamamos as derivadas de <strong>derivadas parciais</strong>, e o gradiente é simplesmente o vetor de derivadas parciais em cada dimensão.</p>
+
+        <h3 id="gradcompute">Calculando o gradiente</h3>
+
+        <p>Há duas formas de calcular o gradiente: uma forma lenta, aproximada, mas fácil (<strong>gradiente numérico</strong>), e uma forma rápida, exata, mas mais sujeita a erros, que requer cálculo (<strong>gradiente analítico</strong>). Vamos agora apresentar as duas.</p>
+
+        <h4 id="numerical">Calculando o gradiente numericamente com diferenças finitas</h4>
+
+        <p>A fórmula dada acima nos permite calcular o gradiente numericamente. Aqui está uma função genérica que recebe uma função <code>f</code>, um vetor <code>x</code> no qual avaliar o gradiente, e retorna o gradiente de <code>f</code> em <code>x</code>:</p>
+
+        <pre><code>def eval_numerical_gradient(f, x):
+  """
+  uma implementação ingênua do gradiente numérico de f em x
+  - f deve ser uma função que recebe um único argumento
+  - x é o ponto (array numpy) no qual avaliar o gradiente
+  """
+
+  fx = f(x) # avalia o valor da função no ponto original
+  grad = np.zeros(x.shape)
+  h = 0.00001
+
+  # itera sobre todos os índices de x
+  it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+  while not it.finished:
+
+    # avalia a função em x+h
+    ix = it.multi_index
+    old_value = x[ix]
+    x[ix] = old_value + h # incrementa em h
+    fxh = f(x) # avalia f(x + h)
+    x[ix] = old_value # restaura ao valor anterior (muito importante!)
+
+    # calcula a derivada parcial
+    grad[ix] = (fxh - fx) / h # a inclinação
+    it.iternext() # avança para a próxima dimensão
+
+  return grad</code></pre>
+
+        <p>Seguindo a fórmula do gradiente dada acima, o código acima itera sobre todas as dimensões uma a uma, faz uma pequena alteração <code>h</code> ao longo dessa dimensão e calcula a derivada parcial da função de perda ao longo dessa dimensão observando o quanto a função mudou. A variável <code>grad</code> mantém o gradiente completo ao final.</p>
+
+        <p><strong>Considerações práticas</strong>. Note que, na formulação matemática, o gradiente é definido no limite quando <strong>h</strong> tende a zero, mas na prática costuma ser suficiente usar um valor bem pequeno (como 1e-5, como no exemplo). Idealmente, você quer usar o menor tamanho de passo que não leve a problemas numéricos. Além disso, na prática, costuma funcionar melhor calcular o gradiente numérico usando a <strong>fórmula da diferença centrada</strong>: \( [f(x+h) - f(x-h)] / 2 h \). Veja a <a href="http://en.wikipedia.org/wiki/Numerical_differentiation" target="_blank" rel="noopener">wiki</a> para detalhes.</p>
+
+        <p>Podemos usar a função dada acima para calcular o gradiente em qualquer ponto e para qualquer função. Vamos calcular o gradiente para a função de perda do CIFAR-10 em algum ponto aleatório no espaço de pesos:</p>
+
+        <pre><code>
+# para usar o código genérico acima, queremos uma função que receba um único argumento
+# (os pesos, no nosso caso), então fechamos sobre X_train e Y_train
+def CIFAR10_loss_fun(W):
+  return L(X_train, Y_train, W)
+
+W = np.random.rand(10, 3073) * 0.001 # vetor de pesos aleatório
+df = eval_numerical_gradient(CIFAR10_loss_fun, W) # obtém o gradiente</code></pre>
+
+        <p>O gradiente nos diz a inclinação da função de perda ao longo de cada dimensão, que podemos usar para fazer uma atualização:</p>
+
+        <pre><code>loss_original = CIFAR10_loss_fun(W) # a perda original
+print 'original loss: %f' % (loss_original, )
+
+# vamos ver o efeito de múltiplos tamanhos de passo
+for step_size_log in [-10, -9, -8, -7, -6, -5,-4,-3,-2,-1]:
+  step_size = 10 ** step_size_log
+  W_new = W - step_size * df # nova posição no espaço de pesos
+  loss_new = CIFAR10_loss_fun(W_new)
+  print 'for step size %f new loss: %f' % (step_size, loss_new)
+
+# imprime:
+# original loss: 2.200718
+# for step size 1.000000e-10 new loss: 2.200652
+# for step size 1.000000e-09 new loss: 2.200057
+# for step size 1.000000e-08 new loss: 2.194116
+# for step size 1.000000e-07 new loss: 2.135493
+# for step size 1.000000e-06 new loss: 1.647802
+# for step size 1.000000e-05 new loss: 2.844355
+# for step size 1.000000e-04 new loss: 25.558142
+# for step size 1.000000e-03 new loss: 254.086573
+# for step size 1.000000e-02 new loss: 2539.370888
+# for step size 1.000000e-01 new loss: 25392.214036</code></pre>
+
+        <p><strong>Atualização na direção negativa do gradiente</strong>. No código acima, note que, para calcular <code>W_new</code>, estamos fazendo uma atualização na direção negativa do gradiente <code>df</code>, já que desejamos que nossa função de perda diminua, não aumente.</p>
+
+        <p><strong>Efeito do tamanho do passo</strong>. O gradiente nos diz a direção em que a função tem a taxa de aumento mais íngreme, mas não nos diz o quão longe, nessa direção, devemos dar o passo. Como veremos mais adiante no curso, escolher o tamanho do passo (também chamado de <em>taxa de aprendizado</em>) se tornará um dos ajustes de hiperparâmetro mais importantes (e mais dolorosos) no treinamento de uma rede neural. Na nossa analogia da descida da montanha vendados, sentimos a montanha sob nossos pés inclinando-se em alguma direção, mas o comprimento do passo que devemos dar é incerto. Se movermos os pés com cuidado, podemos esperar um progresso consistente, porém muito pequeno (isso corresponde a ter um tamanho de passo pequeno). Por outro lado, podemos optar por dar um passo grande e confiante, na tentativa de descer mais rápido, mas isso pode não compensar. Como você pode ver no exemplo de código acima, em algum ponto dar um passo maior resulta em uma perda maior, já que "passamos do ponto".</p>
+
+        <figure class="fig-left">
+          <img src="assets/stepsize.jpg" alt="Efeito do tamanho do passo">
+          <figcaption>Visualizando o efeito do tamanho do passo. Começamos em um ponto particular W e avaliamos o gradiente (ou melhor, seu negativo — a seta branca), que nos diz a direção de maior diminuição da função de perda. Passos pequenos tendem a levar a um progresso consistente, porém lento. Passos grandes podem levar a um progresso melhor, mas são mais arriscados. Note que, eventualmente, para um tamanho de passo grande, vamos ultrapassar o ponto e piorar a perda. O tamanho do passo (ou, como chamaremos mais adiante, a <strong>taxa de aprendizado</strong>) se tornará um dos hiperparâmetros mais importantes que teremos que ajustar cuidadosamente.</figcaption>
+        </figure>
+
+        <p><strong>Um problema de eficiência</strong>. Você deve ter notado que avaliar o gradiente numérico tem complexidade linear no número de parâmetros. No nosso exemplo, tínhamos 30.730 parâmetros no total e, portanto, precisamos realizar 30.731 avaliações da função de perda para calcular o gradiente e realizar apenas uma única atualização de parâmetros. Esse problema só piora, já que Redes Neurais modernas podem facilmente ter dezenas de milhões de parâmetros. Claramente, essa estratégia não é escalável, e precisamos de algo melhor.</p>
+
+        <h4 id="analytic">Calculando o gradiente analiticamente com cálculo</h4>
+
+        <p>O gradiente numérico é muito simples de calcular usando a aproximação por diferenças finitas, mas a desvantagem é que ele é aproximado (já que temos que escolher um valor pequeno de <em>h</em>, enquanto o verdadeiro gradiente é definido como o limite quando <em>h</em> tende a zero), e que é computacionalmente muito caro de calcular. A segunda forma de calcular o gradiente é analiticamente, usando cálculo, o que nos permite derivar uma fórmula direta para o gradiente (sem aproximações) que também é muito rápida de calcular. No entanto, diferente do gradiente numérico, ele pode ser mais sujeito a erros de implementação, razão pela qual, na prática, é muito comum calcular o gradiente analítico e compará-lo com o gradiente numérico para checar a corretude da implementação. Isso é chamado de <strong>verificação de gradiente</strong> (gradient check).</p>
+
+        <p>Vamos usar o exemplo da função de perda SVM para um único ponto de dado:</p>
+
+        <p>$$
+        L_i = \sum_{j\neq y_i} \left[ \max(0, w_j^Tx_i - w_{y_i}^Tx_i + \Delta) \right]
+        $$</p>
+
+        <p>Podemos diferenciar a função em relação aos pesos. Por exemplo, tomando o gradiente em relação a \(w_{y_i}\), obtemos:</p>
+
+        <p>$$
+        \nabla_{w_{y_i}} L_i = - \left( \sum_{j\neq y_i} \mathbb{1}(w_j^Tx_i - w_{y_i}^Tx_i + \Delta > 0) \right) x_i
+        $$</p>
+
+        <p>onde \(\mathbb{1}\) é a função indicadora, que vale um se a condição interna for verdadeira, ou zero caso contrário. Embora a expressão possa parecer assustadora quando escrita por extenso, ao implementá-la em código você simplesmente contaria o número de classes que não atingiram a margem desejada (e, portanto, contribuíram para a função de perda), e então o vetor de dados \(x_i\), escalado por esse número, é o gradiente. Note que este é o gradiente apenas em relação à linha de \(W\) que corresponde à classe correta. Para as outras linhas, onde \(j \neq y_i \), o gradiente é:</p>
+
+        <p>$$
+        \nabla_{w_j} L_i = \mathbb{1}(w_j^Tx_i - w_{y_i}^Tx_i + \Delta > 0) x_i
+        $$</p>
+
+        <p>Uma vez derivada a expressão para o gradiente, é direto implementá-la e usá-la para realizar a atualização do gradiente.</p>
+
+        <h3 id="gd">Descida do gradiente</h3>
+
+        <p>Agora que já sabemos calcular o gradiente da função de perda, o procedimento de avaliar repetidamente o gradiente e então realizar uma atualização de parâmetros é chamado de <em>Descida do Gradiente</em> (Gradient Descent). Sua versão <strong>básica</strong> tem a seguinte forma:</p>
+
+        <pre><code># Descida do Gradiente básica (Vanilla Gradient Descent)
+
+while True:
+  weights_grad = evaluate_gradient(loss_fun, data, weights)
+  weights += - step_size * weights_grad # realiza a atualização dos parâmetros</code></pre>
+
+        <p>Esse laço simples está no núcleo de todas as bibliotecas de Redes Neurais. Há outras formas de realizar a otimização (por exemplo, LBFGS), mas a Descida do Gradiente é, atualmente, de longe a forma mais comum e consolidada de otimizar funções de perda de Redes Neurais. Ao longo da disciplina, vamos adicionar alguns detalhes e refinamentos a esse laço (por exemplo, os detalhes exatos da equação de atualização), mas a ideia central de seguir o gradiente até estarmos satisfeitos com os resultados permanecerá a mesma.</p>
+
+        <p><strong>Descida do gradiente por mini-lotes (mini-batch).</strong> Em aplicações de larga escala (como o desafio ILSVRC), os dados de treinamento podem ter da ordem de milhões de exemplos. Assim, parece um desperdício calcular a função de perda completa sobre todo o conjunto de treinamento apenas para realizar uma única atualização de parâmetros. Uma abordagem muito comum para lidar com esse desafio é calcular o gradiente sobre <strong>lotes</strong> (batches) dos dados de treinamento. Por exemplo, nas ConvNets estado da arte atuais, um lote típico contém 256 exemplos de todo o conjunto de treinamento de 1,2 milhão. Esse lote é então usado para realizar uma atualização de parâmetros:</p>
+
+        <pre><code># Descida do Gradiente básica por mini-lote (Vanilla Minibatch Gradient Descent)
+
+while True:
+  data_batch = sample_training_data(data, 256) # amostra 256 exemplos
+  weights_grad = evaluate_gradient(loss_fun, data_batch, weights)
+  weights += - step_size * weights_grad # realiza a atualização dos parâmetros</code></pre>
+
+        <p>A razão pela qual isso funciona bem é que os exemplos nos dados de treinamento são correlacionados. Para ver isso, considere o caso extremo em que todas as 1,2 milhão de imagens do ILSVRC são, na verdade, compostas por cópias exatas de apenas 1000 imagens únicas (uma para cada classe, ou seja, 1200 cópias idênticas de cada imagem). Então fica claro que os gradientes que calcularíamos para todas as 1200 cópias idênticas seriam todos iguais e, quando fazemos a média da perda de dados sobre todas as 1,2 milhão de imagens, obteríamos exatamente a mesma perda que se avaliássemos apenas em um pequeno subconjunto de 1000. Na prática, é claro, o conjunto de dados não conteria imagens duplicadas, e o gradiente de um mini-lote é uma boa aproximação do gradiente do objetivo completo. Portanto, uma convergência muito mais rápida pode ser alcançada, na prática, ao avaliar os gradientes de mini-lote para realizar atualizações de parâmetros mais frequentes.</p>
+
+        <p>O caso extremo disso é uma configuração em que o mini-lote contém apenas um único exemplo. Esse processo é chamado de <strong>Descida do Gradiente Estocástica (SGD)</strong> (ou, às vezes, também de descida do gradiente <strong>on-line</strong>). Isso é relativamente menos comum de se ver, porque, na prática, devido a otimizações de código vetorizado, pode ser computacionalmente muito mais eficiente calcular o gradiente para 100 exemplos do que calcular o gradiente para um exemplo 100 vezes. Ainda que SGD, tecnicamente, se refira ao uso de um único exemplo por vez para calcular o gradiente, você vai ouvir as pessoas usarem o termo SGD mesmo quando estão se referindo à descida do gradiente por mini-lote (ou seja, menções a MGD, de "Minibatch Gradient Descent", ou BGD, de "Batch gradient descent", são raras de se ver), quando geralmente se assume que mini-lotes são usados. O tamanho do mini-lote é um hiperparâmetro, mas não é muito comum validá-lo por validação cruzada. Costuma ser baseado em restrições de memória (se houver), ou definido para algum valor, por exemplo, 32, 64 ou 128. Usamos potências de 2 na prática porque muitas implementações de operações vetorizadas funcionam mais rápido quando suas entradas têm tamanhos em potências de 2.</p>
+
+        <h3 id="summary">Resumo</h3>
+
+        <figure>
+          <img src="assets/dataflow.jpeg" alt="Resumo do fluxo de informação">
+          <figcaption>Resumo do fluxo de informação. O conjunto de dados de pares <strong>(x,y)</strong> é dado e fixo. Os pesos começam como números aleatórios e podem mudar. Durante a passagem para a frente (forward pass), a função de pontuação calcula as pontuações de classe, armazenadas no vetor <strong>f</strong>. A função de perda contém dois componentes: a perda de dados calcula a compatibilidade entre as pontuações <strong>f</strong> e os rótulos <strong>y</strong>. A perda de regularização é função apenas dos pesos. Durante a Descida do Gradiente, calculamos o gradiente sobre os pesos (e, opcionalmente, sobre os dados, se quisermos) e o usamos para realizar uma atualização de parâmetros durante a Descida do Gradiente.</figcaption>
+        </figure>
+
+        <p>Nesta seção,</p>
+
+        <ul>
+          <li>Desenvolvemos a intuição da função de perda como uma <strong>paisagem de otimização de alta dimensionalidade</strong>, na qual estamos tentando chegar ao fundo. A analogia de trabalho que desenvolvemos foi a de um caminhante vendado que deseja chegar ao fundo. Em particular, vimos que a função de custo da SVM é linear por partes e tem formato de tigela.</li>
+          <li>Motivamos a ideia de otimizar a função de perda com <strong>refinamento iterativo</strong>, em que começamos com um conjunto aleatório de pesos e os refinamos passo a passo até que a perda seja minimizada.</li>
+          <li>Vimos que o <strong>gradiente</strong> de uma função dá a direção de subida mais íngreme, e discutimos uma forma simples, mas ineficiente, de calculá-lo numericamente, usando a aproximação por diferenças finitas (a diferença finita sendo o valor de <em>h</em> usado no cálculo do gradiente numérico).</li>
+          <li>Vimos que a atualização de parâmetros exige um ajuste delicado do <strong>tamanho do passo</strong> (ou <strong>taxa de aprendizado</strong>), que precisa ser definido corretamente: se for baixo demais, o progresso é constante, mas lento. Se for alto demais, o progresso pode ser mais rápido, mas mais arriscado. Vamos explorar esse compromisso com muito mais detalhe em seções futuras.</li>
+          <li>Discutimos os compromissos entre calcular o gradiente <strong>numérico</strong> e o <strong>analítico</strong>. O gradiente numérico é simples, mas é aproximado e caro de calcular. O gradiente analítico é exato, rápido de calcular, mas mais sujeito a erros, já que requer a derivação do gradiente com matemática. Portanto, na prática, sempre usamos o gradiente analítico e então realizamos uma <strong>verificação de gradiente</strong>, na qual sua implementação é comparada com o gradiente numérico.</li>
+          <li>Introduzimos o algoritmo de <strong>Descida do Gradiente</strong>, que calcula o gradiente iterativamente e realiza uma atualização de parâmetros em laço.</li>
+        </ul>
+
+        <p><strong>A seguir:</strong> a principal lição desta seção é que a capacidade de calcular o gradiente de uma função de perda em relação aos seus pesos (e ter algum entendimento intuitivo sobre isso) é a habilidade mais importante necessária para projetar, treinar e entender redes neurais. Na próxima seção, vamos desenvolver proficiência em calcular o gradiente analiticamente usando a regra da cadeia, também chamada de <strong>retropropagação</strong> (backpropagation). Isso vai nos permitir otimizar eficientemente funções de perda relativamente arbitrárias, que expressam todo tipo de Rede Neural, incluindo Redes Neurais Convolucionais.</p>
+      </section>
+
+    </div>
+    <div class="material-group">
+      <h3>Slides</h3>
+      <ul>
+        <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_3.pdf" target="_blank" rel="noopener"><span><span class="icon">📄</span>Slides <span class="source">· Stanford CS231n</span></span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Para explorar</h3>
+      <ul>
+        <li><a href="https://distill.pub/2017/momentum" target="_blank" rel="noopener" title="Material extra sobre o papel da inércia no algoritmo de descida de gradiente."><span><span class="icon">🔗</span>Why Momentum Really Works</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>
