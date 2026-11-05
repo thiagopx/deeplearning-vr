@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizando e entendendo ConvNets — Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Notas de aula sobre visualização e interpretação de redes convolucionais — tradução para português (gerada por IA) do material do curso CS231n, Stanford University. Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<style>
+  :root{
+    /* ⚠️ PLACEHOLDER — spec/index.md ainda não tem o hex oficial do verde
+       institucional do Ifes confirmado (ifes.edu.br/download-de-marcas).
+       Estes dois tons são um verde genérico de espera, NÃO a cor oficial —
+       trocar assim que o hex real for confirmado. */
+    --ifes-verde: #3a9169;
+    --ifes-verde-escuro: #256b4a;
+    --tinta: #1c1c1c;
+    --fundo: #0e1414;
+    --fundo-card: #172020;
+    --muted: #8a978f;
+
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--fundo);
+    color: #e7ece9;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  a { color: var(--ifes-verde); }
+  a:visited { color: var(--ifes-verde); }
+
+  .topbar{
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid #22302a;
+    font-size: .85rem;
+  }
+  .topbar a{ color: var(--muted); text-decoration: none; }
+  .topbar a:hover{ color: var(--ifes-verde); }
+
+  main{
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .6rem;
+  }
+  .section-header{
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .section-badge{
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .9rem;
+    background: var(--fundo-card);
+    color: var(--ifes-verde);
+    border: 1px solid #22302a;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2{ font-size: 1.6rem; margin: 0; }
+  h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
+  h3{ font-size: 1.3rem; margin-top: 2.5rem; }
+  h4{ font-size: 1.1rem; margin-top: 2rem; color: #d6ded9; }
+  h5{ font-size: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+  .ai-disclaimer{
+    display: flex;
+    gap: .6rem;
+    background: var(--fundo-card);
+    border: 1px solid #2a3a32;
+    border-left: 3px solid var(--ifes-verde);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    color: #cdd6d1;
+    margin-bottom: 2rem;
+  }
+
+  .source-credit{
+    font-size: .82rem;
+    color: var(--muted);
+    border-top: 1px solid #22302a;
+    padding-top: .6rem;
+    margin-top: 3rem;
+  }
+  .translated-source:first-of-type .source-credit{ margin-top: 0; }
+  .source-credit a{ text-decoration: none; }
+  .source-credit a:hover{ text-decoration: underline; }
+
+  .toc{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-size: .88rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc p{ margin: 0 0 .5rem; color: var(--muted); text-transform: uppercase; font-size: .74rem; letter-spacing: .06em; }
+  .toc ul{ margin: 0; padding-left: 1.1rem; }
+  .toc li{ margin: .2rem 0; }
+  .toc a{ text-decoration: none; }
+  .toc a:hover{ text-decoration: underline; }
+
+  p{ margin: 0 0 1rem; }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: .4rem; }
+  strong{ color: #f1f5f2; }
+  em{ font-style: italic; }
+
+  code{
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--fundo-card);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  pre{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+  }
+  pre code{ background: none; padding: 0; font-size: .84em; line-height: 1.55; }
+
+  figure{ margin: 1.5rem 0; text-align: center; }
+  figure img{ max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #22302a; }
+  figure .fig-row{ display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; align-items: flex-start; }
+  figure .fig-row img{ max-width: 100%; }
+  figure.fig-left{ text-align: left; }
+  figcaption{ font-size: .82rem; color: var(--muted); margin-top: .6rem; text-align: left; }
+
+  blockquote{
+    margin: 1.5rem 0;
+    padding: .8rem 1.1rem;
+    border-left: 3px solid var(--ifes-verde);
+    background: var(--fundo-card);
+    color: #d6ded9;
+    font-style: italic;
+  }
+  blockquote p:last-child{ margin-bottom: 0; }
+
+  .material-group{ margin-top: 2.5rem; }
+  .material-group h3{ margin-top: 0; font-size: 1.1rem; }
+  .material-group ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-start; }
+  .material-group li{ margin: 0; }
+  .material-group a{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 12px;
+    padding: .4rem .85rem;
+    font-size: .85rem;
+    text-decoration: none;
+    color: #e7ece9;
+  }
+  .material-group a:hover{ border-color: var(--ifes-verde); }
+  .material-group .icon{ margin-right: .3em; }
+  .material-group .source{ color: var(--muted); font-size: .82em; }
+
+  @media (max-width: 600px){
+    main{ padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head><body>
+
+<div class="topbar">
+  <a href="../../index.html">← Voltar à página do curso</a>
+</div>
+
+<main>
+  <section class="section-block" id="06_detection-segmentation-visualization">
+    <header class="section-header-wrap">
+      <p class="eyebrow">Aula 06 · Detecção de Objetos, Segmentação de Imagens, Visualização e Explicabilidade</p>
+      <div class="section-header">
+        <span class="section-badge">06</span>
+        <h2>Visualizando e entendendo ConvNets</h2>
+      </div>
+    </header>
+
+    <div class="translated-notes">
+      <p class="ai-disclaimer">⚠️ Este conteúdo é uma tradução para português, gerada automaticamente por IA, a partir do material original em inglês do curso CS231n (Stanford University). Consulte o link "Fonte original" abaixo para o texto original.</p>
+
+      <section class="translated-source" id="fonte-understanding-cnn">
+        <p class="source-credit">Fonte original (inglês): <a href="https://cs231n.github.io/understanding-cnn/" target="_blank" rel="noopener">Visualizing what ConvNets learn · CS231n, Stanford University ↗</a></p>
+
+        <nav class="toc">
+          <p>Nesta seção</p>
+          <ul>
+            <li><a href="#ativacoes">Visualizando as ativações e os pesos da primeira camada</a></li>
+            <li><a href="#max-ativacao">Recuperando imagens que ativam um neurônio ao máximo</a></li>
+            <li><a href="#tsne">Incorporando os códigos com t-SNE</a></li>
+            <li><a href="#oclusao">Ocluindo partes da imagem</a></li>
+            <li><a href="#gradiente">Visualizando o gradiente dos dados e técnicas relacionadas</a></li>
+            <li><a href="#reconstrucao">Reconstruindo imagens originais a partir de códigos da CNN</a></li>
+            <li><a href="#espacial">Quanta informação espacial é preservada?</a></li>
+            <li><a href="#atributos">Desempenho em função dos atributos da imagem</a></li>
+            <li><a href="#enganando">Enganando ConvNets</a></li>
+            <li><a href="#humanos">Comparando ConvNets com rotuladores humanos</a></li>
+          </ul>
+        </nav>
+
+        <p>(esta página está em forma de rascunho)</p>
+
+        <p>Várias abordagens para entender e visualizar Redes Convolucionais foram desenvolvidas na literatura, em parte como resposta à crítica comum de que as características aprendidas por uma Rede Neural não são interpretáveis. Nesta seção, vamos passar brevemente por algumas dessas abordagens e trabalhos relacionados.</p>
+
+        <h4 id="ativacoes">Visualizando as ativações e os pesos da primeira camada</h4>
+
+        <p><strong>Ativações das camadas</strong>. A técnica de visualização mais direta é mostrar as ativações da rede durante o forward pass. Em redes com ReLU, as ativações costumam começar com um aspecto relativamente difuso e denso, mas, conforme o treinamento avança, elas costumam ficar mais esparsas e localizadas. Uma armadilha perigosa, fácil de notar com essa visualização, é que alguns mapas de ativação podem ficar totalmente zerados para muitas entradas diferentes, o que pode indicar filtros <em>mortos</em> e ser sintoma de taxas de aprendizado altas.</p>
+
+        <figure>
+          <div class="fig-row">
+            <img src="assets/act1.jpeg" alt="Ativações na primeira camada CONV de uma AlexNet" style="max-width:49%">
+            <img src="assets/act2.jpeg" alt="Ativações na quinta camada CONV de uma AlexNet" style="max-width:49%">
+          </div>
+          <figcaption>Ativações típicas na primeira camada CONV (esquerda) e na 5ª camada CONV (direita) de uma AlexNet treinada, olhando para a foto de um gato. Cada quadro mostra um mapa de ativação correspondente a algum filtro. Note que as ativações são esparsas (a maioria dos valores é zero, mostrada em preto nesta visualização) e, em sua maioria, locais.</figcaption>
+        </figure>
+
+        <p><strong>Filtros CONV/FC.</strong> A segunda estratégia comum é visualizar os pesos. Eles costumam ser mais interpretáveis na primeira camada CONV, que olha diretamente para os pixels brutos, mas também é possível mostrar os pesos dos filtros em camadas mais profundas da rede. Vale a pena visualizar os pesos porque redes bem treinadas costumam exibir filtros bonitos e suaves, sem padrões ruidosos. Padrões ruidosos podem indicar uma rede que não foi treinada por tempo suficiente, ou possivelmente uma força de regularização muito baixa, que pode ter levado a overfitting.</p>
+
+        <figure>
+          <div class="fig-row">
+            <img src="assets/filt1.jpeg" alt="Filtros da primeira camada CONV de uma AlexNet" style="max-width:49%">
+            <img src="assets/filt2.jpeg" alt="Filtros da segunda camada CONV de uma AlexNet" style="max-width:49%">
+          </div>
+          <figcaption>Filtros típicos na primeira camada CONV (esquerda) e na 2ª camada CONV (direita) de uma AlexNet treinada. Note que os pesos da primeira camada são muito bonitos e suaves, indicando uma rede que convergiu bem. As características em cor e em escala de cinza aparecem agrupadas porque a AlexNet contém dois fluxos de processamento separados, e uma consequência aparente dessa arquitetura é que um fluxo desenvolve características em escala de cinza de alta frequência e o outro, características em cor de baixa frequência. Os pesos da 2ª camada CONV não são tão interpretáveis, mas é visível que continuam suaves, bem formados e sem padrões ruidosos.</figcaption>
+        </figure>
+
+        <h4 id="max-ativacao">Recuperando imagens que ativam um neurônio ao máximo</h4>
+
+        <p>Outra técnica de visualização é pegar um grande conjunto de imagens, passá-las pela rede e registrar quais imagens ativam ao máximo algum neurônio. Podemos então visualizar essas imagens para entender o que o neurônio procura em seu campo receptivo. Uma visualização desse tipo (entre outras) aparece em <a href="http://arxiv.org/abs/1311.2524" target="_blank" rel="noopener">Rich feature hierarchies for accurate object detection and semantic segmentation</a>, de Ross Girshick et al.:</p>
+
+        <figure>
+          <img src="assets/pool5max.jpeg" alt="Imagens que ativam ao máximo neurônios da camada POOL5 de uma AlexNet">
+          <figcaption>Imagens que ativam ao máximo alguns neurônios da POOL5 (5ª camada de pooling) de uma AlexNet. Os valores de ativação e o campo receptivo do neurônio em questão são mostrados em branco. (Em particular, note que os neurônios da POOL5 são função de uma parte relativamente grande da imagem de entrada!) Vê-se que alguns neurônios respondem a torsos, texto ou reflexos especulares.</figcaption>
+        </figure>
+
+        <p>Um problema dessa abordagem é que os neurônios ReLU não têm necessariamente significado semântico por si sós. É mais apropriado pensar em múltiplos neurônios ReLU como os vetores de base de algum espaço que representa recortes de imagem. Em outras palavras, a visualização mostra os recortes na borda da nuvem de representações, ao longo dos eixos (arbitrários) que correspondem aos pesos dos filtros. Isso também pode ser visto pelo fato de que os neurônios de uma ConvNet operam linearmente sobre o espaço de entrada, então qualquer rotação arbitrária desse espaço não muda nada. Esse ponto foi aprofundado em <a href="http://arxiv.org/abs/1312.6199" target="_blank" rel="noopener">Intriguing properties of neural networks</a>, de Szegedy et al., em que os autores fazem uma visualização semelhante ao longo de direções arbitrárias no espaço de representação.</p>
+
+        <h4 id="tsne">Incorporando os códigos com t-SNE</h4>
+
+        <p>ConvNets podem ser interpretadas como transformando gradualmente as imagens numa representação em que as classes são separáveis por um classificador linear. Podemos ter uma ideia aproximada da topologia desse espaço incorporando as imagens em duas dimensões, de modo que sua representação de baixa dimensão tenha distâncias aproximadamente iguais às da representação de alta dimensão. Foram desenvolvidos muitos métodos de incorporação com a intuição de levar vetores de alta dimensão a um espaço de baixa dimensão preservando as distâncias entre pares de pontos. Entre eles, o <a href="http://lvdmaaten.github.io/tsne/" target="_blank" rel="noopener">t-SNE</a> é um dos métodos mais conhecidos e produz, de forma consistente, resultados visualmente agradáveis.</p>
+
+        <p>Para produzir uma incorporação, podemos pegar um conjunto de imagens e usar a ConvNet para extrair os códigos da CNN (por exemplo, na AlexNet, o vetor de 4096 dimensões logo antes do classificador e, crucialmente, incluindo a não linearidade ReLU). Podemos então passá-los ao t-SNE e obter um vetor de 2 dimensões para cada imagem. As imagens correspondentes podem então ser visualizadas numa grade:</p>
+
+        <figure>
+          <img src="assets/tsne.jpeg" alt="Incorporação t-SNE de um conjunto de imagens">
+          <figcaption>Incorporação t-SNE de um conjunto de imagens com base em seus códigos da CNN. Imagens próximas umas das outras também estão próximas no espaço de representação da CNN, o que implica que a CNN as "vê" como muito parecidas. Note que as semelhanças são, com mais frequência, baseadas em classe e semântica do que em pixels e cor. Para mais detalhes sobre como esta visualização foi produzida, o código associado e mais visualizações relacionadas em diferentes escalas, consulte <a href="http://cs.stanford.edu/people/karpathy/cnnembed/" target="_blank" rel="noopener">t-SNE visualization of CNN codes</a>.</figcaption>
+        </figure>
+
+        <h4 id="oclusao">Ocluindo partes da imagem</h4>
+
+        <p>Suponha que uma ConvNet classifique uma imagem como cachorro. Como ter certeza de que ela está de fato captando o cachorro na imagem, e não pistas de contexto do fundo ou algum outro objeto qualquer? Uma forma de investigar de qual parte da imagem vem uma previsão de classificação é plotar a probabilidade da classe de interesse (por exemplo, a classe cachorro) em função da posição de um objeto oclusor. Ou seja, percorremos regiões da imagem, zeramos um recorte da imagem e observamos a probabilidade da classe. Podemos visualizar essa probabilidade como um mapa de calor bidimensional. Essa abordagem foi usada em <a href="http://arxiv.org/abs/1311.2901" target="_blank" rel="noopener">Visualizing and Understanding Convolutional Networks</a>, de Matthew Zeiler:</p>
+
+        <figure>
+          <img src="assets/occlude.jpeg" alt="Imagens de entrada com oclusor e mapas de calor da probabilidade da classe correta">
+          <figcaption>Três imagens de entrada (em cima). Note que a região do oclusor é mostrada em cinza. Conforme deslizamos o oclusor pela imagem, registramos a probabilidade da classe correta e a visualizamos como um mapa de calor (mostrado abaixo de cada imagem). Por exemplo, na imagem mais à esquerda, vemos que a probabilidade de Lulu-da-Pomerânia despenca quando o oclusor cobre a cara do cachorro, o que nos dá algum grau de confiança de que a cara do cachorro é a principal responsável pela pontuação alta de classificação. Por outro lado, zerar outras partes da imagem tem impacto relativamente desprezível.</figcaption>
+        </figure>
+
+        <h4 id="gradiente">Visualizando o gradiente dos dados e técnicas relacionadas</h4>
+
+        <p><strong>Gradiente dos dados</strong>.</p>
+
+        <p><a href="http://arxiv.org/abs/1312.6034" target="_blank" rel="noopener">Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps</a></p>
+
+        <p><strong>DeconvNet</strong>.</p>
+
+        <p><a href="http://arxiv.org/abs/1311.2901" target="_blank" rel="noopener">Visualizing and Understanding Convolutional Networks</a></p>
+
+        <p><strong>Retropropagação guiada (Guided Backpropagation)</strong>.</p>
+
+        <p><a href="http://arxiv.org/abs/1412.6806" target="_blank" rel="noopener">Striving for Simplicity: The All Convolutional Net</a></p>
+
+        <h4 id="reconstrucao">Reconstruindo imagens originais a partir de códigos da CNN</h4>
+
+        <p><a href="http://arxiv.org/abs/1412.0035" target="_blank" rel="noopener">Understanding Deep Image Representations by Inverting Them</a></p>
+
+        <h4 id="espacial">Quanta informação espacial é preservada?</h4>
+
+        <p><a href="http://papers.nips.cc/paper/5420-do-convnets-learn-correspondence.pdf" target="_blank" rel="noopener">Do ConvNets Learn Correspondence?</a> (resumindo: sim)</p>
+
+        <h4 id="atributos">Plotando o desempenho em função dos atributos da imagem</h4>
+
+        <p><a href="http://arxiv.org/abs/1409.0575" target="_blank" rel="noopener">ImageNet Large Scale Visual Recognition Challenge</a></p>
+
+        <h3 id="enganando">Enganando ConvNets</h3>
+
+        <p><a href="http://arxiv.org/abs/1412.6572" target="_blank" rel="noopener">Explaining and Harnessing Adversarial Examples</a></p>
+
+        <h3 id="humanos">Comparando ConvNets com rotuladores humanos</h3>
+
+        <p><a href="http://karpathy.github.io/2014/09/02/what-i-learned-from-competing-against-a-convnet-on-imagenet/" target="_blank" rel="noopener">What I learned from competing against a ConvNet on ImageNet</a></p>
+      </section>
+
+    </div>
+    <div class="material-group">
+      <h3>Slides</h3>
+      <ul>
+        <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_9.pdf" target="_blank" rel="noopener"><span><span class="icon">📄</span>Slides <span class="source">· Stanford CS231n</span></span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Notebooks</h3>
+      <ul>
+        <li><a href="https://colab.research.google.com/drive/1ZMiQDZ6cvMpCrFtGMPxs41eRxqbpK0Y6?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>semantic-segmentation-with-U-NET</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1FN1txrrjMQ9YadLjRds70NOQzE6VxAfq?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>train-yolov8-object-detection-on-custom-dataset</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1G7dSyBUb8Tom8c9nzNiyauPgIHdD4JCh?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>xai</span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Para explorar</h3>
+      <ul>
+        <li><a href="https://arxiv.org/abs/1411.4038" target="_blank" rel="noopener" title="Paper sobre redes totalmente convolucionais para segmentação semântica."><span><span class="icon">🔗</span>FCN</span></a></li>
+        <li><a href="https://arxiv.org/abs/1311.2524" target="_blank" rel="noopener" title="Paper sobre R-CNN, uma abordagem para detecção de objetos usando redes neurais convolucionais."><span><span class="icon">🔗</span>R-CNN</span></a></li>
+        <li><a href="https://arxiv.org/abs/1504.08083" target="_blank" rel="noopener" title="Paper sobre Fast R-CNN, uma melhoria do R-CNN que permite treinamento mais rápido e preciso."><span><span class="icon">🔗</span>Fast R-CNN</span></a></li>
+        <li><a href="https://arxiv.org/abs/1506.01497" target="_blank" rel="noopener" title="Paper sobre Faster R-CNN, uma versão ainda mais rápida do R-CNN que utiliza Region Proposal Networks (RPNs)."><span><span class="icon">🔗</span>Faster R-CNN</span></a></li>
+        <li><a href="https://arxiv.org/abs/1506.02640" target="_blank" rel="noopener" title="Paper sobre detecção em tempo real com um detector de estágio único."><span><span class="icon">🔗</span>YOLO</span></a></li>
+        <li><a href="https://arxiv.org/abs/2005.12872" target="_blank" rel="noopener" title="Paper sobre detecção de objetos de ponta a ponta com Transformers."><span><span class="icon">🔗</span>DETR</span></a></li>
+        <li><a href="https://arxiv.org/abs/1703.06870" target="_blank" rel="noopener" title="Paper sobre segmentação de instâncias a partir da Faster R-CNN."><span><span class="icon">🔗</span>Mask R-CNN</span></a></li>
+        <li><a href="https://arxiv.org/abs/1610.02391" target="_blank" rel="noopener" title="Paper sobre explicações visuais baseadas em gradientes."><span><span class="icon">🔗</span>Grad-CAM</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

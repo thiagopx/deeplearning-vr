@@ -5,7 +5,6 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-from utils import load_rgb
 from skimage import exposure, img_as_float
 
 DPI = 10
