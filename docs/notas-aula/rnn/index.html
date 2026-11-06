@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redes Neurais Recorrentes — Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Notas de aula sobre redes neurais recorrentes — tradução para português (gerada por IA) do material do curso CS231n, Stanford University. Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<style>
+  :root{
+    /* ⚠️ PLACEHOLDER — spec/index.md ainda não tem o hex oficial do verde
+       institucional do Ifes confirmado (ifes.edu.br/download-de-marcas).
+       Estes dois tons são um verde genérico de espera, NÃO a cor oficial —
+       trocar assim que o hex real for confirmado. */
+    --ifes-verde: #3a9169;
+    --ifes-verde-escuro: #256b4a;
+    --tinta: #1c1c1c;
+    --fundo: #0e1414;
+    --fundo-card: #172020;
+    --muted: #8a978f;
+
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--fundo);
+    color: #e7ece9;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  a { color: var(--ifes-verde); }
+  a:visited { color: var(--ifes-verde); }
+
+  .topbar{
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid #22302a;
+    font-size: .85rem;
+  }
+  .topbar a{ color: var(--muted); text-decoration: none; }
+  .topbar a:hover{ color: var(--ifes-verde); }
+
+  main{
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .6rem;
+  }
+  .section-header{
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .section-badge{
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .9rem;
+    background: var(--fundo-card);
+    color: var(--ifes-verde);
+    border: 1px solid #22302a;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2{ font-size: 1.6rem; margin: 0; }
+  h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
+  h3{ font-size: 1.3rem; margin-top: 2.5rem; }
+  h4{ font-size: 1.1rem; margin-top: 2rem; color: #d6ded9; }
+  h5{ font-size: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+  .ai-disclaimer{
+    display: flex;
+    gap: .6rem;
+    background: var(--fundo-card);
+    border: 1px solid #2a3a32;
+    border-left: 3px solid var(--ifes-verde);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    color: #cdd6d1;
+    margin-bottom: 2rem;
+  }
+
+  .source-credit{
+    font-size: .82rem;
+    color: var(--muted);
+    border-top: 1px solid #22302a;
+    padding-top: .6rem;
+    margin-top: 3rem;
+  }
+  .translated-source:first-of-type .source-credit{ margin-top: 0; }
+  .source-credit a{ text-decoration: none; }
+  .source-credit a:hover{ text-decoration: underline; }
+
+  .toc{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-size: .88rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc p{ margin: 0 0 .5rem; color: var(--muted); text-transform: uppercase; font-size: .74rem; letter-spacing: .06em; }
+  .toc ul{ margin: 0; padding-left: 1.1rem; }
+  .toc li{ margin: .2rem 0; }
+  .toc a{ text-decoration: none; }
+  .toc a:hover{ text-decoration: underline; }
+
+  p{ margin: 0 0 1rem; }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: .4rem; }
+  strong{ color: #f1f5f2; }
+  em{ font-style: italic; }
+
+  code{
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--fundo-card);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  pre{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+  }
+  pre code{ background: none; padding: 0; font-size: .84em; line-height: 1.55; }
+
+  figure{ margin: 1.5rem 0; text-align: center; }
+  figure img{ max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #22302a; }
+  figure .fig-row{ display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; align-items: flex-start; }
+  figure .fig-row img{ max-width: 100%; }
+  figure.fig-left{ text-align: left; }
+  figcaption{ font-size: .82rem; color: var(--muted); margin-top: .6rem; text-align: left; }
+
+  blockquote{
+    margin: 1.5rem 0;
+    padding: .8rem 1.1rem;
+    border-left: 3px solid var(--ifes-verde);
+    background: var(--fundo-card);
+    color: #d6ded9;
+    font-style: italic;
+  }
+  blockquote p:last-child{ margin-bottom: 0; }
+
+  .material-group{ margin-top: 2.5rem; }
+  .material-group h3{ margin-top: 0; font-size: 1.1rem; }
+  .material-group ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-start; }
+  .material-group li{ margin: 0; }
+  .material-group a{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 12px;
+    padding: .4rem .85rem;
+    font-size: .85rem;
+    text-decoration: none;
+    color: #e7ece9;
+  }
+  .material-group a:hover{ border-color: var(--ifes-verde); }
+  .material-group .icon{ margin-right: .3em; }
+  .material-group .source{ color: var(--muted); font-size: .82em; }
+
+  @media (max-width: 600px){
+    main{ padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head><body>
+
+<div class="topbar">
+  <a href="../../index.html">← Voltar à página do curso</a>
+</div>
+
+<main>
+  <section class="section-block" id="07_rnn">
+    <header class="section-header-wrap">
+      <p class="eyebrow">Aula 07 · Redes Neurais Recorrentes</p>
+      <div class="section-header">
+        <span class="section-badge">07</span>
+        <h2>Redes Neurais Recorrentes</h2>
+      </div>
+    </header>
+
+    <div class="translated-notes">
+      <p class="ai-disclaimer">⚠️ Este conteúdo é uma tradução para português, gerada automaticamente por IA, a partir do material original em inglês do curso CS231n (Stanford University). Consulte o link "Fonte original" abaixo para o texto original.</p>
+
+      <section class="translated-source" id="fonte-rnn">
+        <p class="source-credit">Fonte original (inglês): <a href="https://cs231n.github.io/rnn/" target="_blank" rel="noopener">Introduction to RNN · CS231n, Stanford University ↗</a></p>
+
+        <nav class="toc">
+          <p>Nesta seção</p>
+          <ul>
+            <li><a href="#intro">Introdução às RNNs</a></li>
+            <li><a href="#char">Exemplo de RNN: modelo de linguagem em nível de caractere</a></li>
+            <li><a href="#multi">RNNs multicamadas</a></li>
+            <li><a href="#lstm">Long-Short Term Memory (LSTM)</a></li>
+          </ul>
+        </nav>
+
+        <h3 id="intro">Introdução às RNNs</h3>
+
+        <p>Nesta nota de aula, vamos falar sobre Redes Neurais Recorrentes (RNNs). Uma grande vantagem das RNNs é a flexibilidade que elas oferecem na forma de conectar a arquitetura da rede neural. Normalmente, quando trabalhamos com redes neurais (Figura 1), recebemos um vetor de entrada de tamanho fixo (vermelho), o processamos com algumas camadas ocultas (verde) e produzimos um vetor de saída de tamanho fixo (azul), como mostra o modelo mais à esquerda (Redes Neurais "Vanilla") na Figura 1. Enquanto <strong>Redes Neurais "Vanilla"</strong> recebem uma única entrada e produzem um rótulo para aquela imagem, há tarefas em que o modelo produz uma sequência de saídas, como mostra o modelo um-para-muitos na Figura 1. <strong>Redes Neurais Recorrentes</strong> nos permitem operar sobre sequências de entrada, de saída ou de ambas ao mesmo tempo.</p>
+
+        <ul>
+          <li>Um exemplo de modelo <strong>um-para-muitos</strong> é a legendagem de imagens, em que recebemos uma imagem de tamanho fixo e produzimos, por meio de uma RNN, uma sequência de palavras que descreve o conteúdo dessa imagem (segundo modelo na Figura 1).</li>
+          <li>Um exemplo de tarefa <strong>muitos-para-um</strong> é a predição de ações, em que olhamos para uma sequência de quadros de vídeo em vez de uma única imagem e produzimos um rótulo da ação que estava acontecendo no vídeo, como mostra o terceiro modelo na Figura 1. Outro exemplo de tarefa muitos-para-um é a classificação de sentimento em PLN, em que recebemos a sequência de palavras de uma frase e classificamos qual é o sentimento dessa frase (por exemplo, positivo ou negativo).</li>
+          <li>Um exemplo de tarefa <strong>muitos-para-muitos</strong> é a legendagem de vídeo, em que a entrada é uma sequência de quadros de vídeo e a saída é uma legenda que descreve o que havia no vídeo, como mostra o quarto modelo na Figura 1. Outro exemplo de tarefa muitos-para-muitos é a tradução automática em PLN, em que uma RNN recebe a sequência de palavras de uma frase em inglês e precisa produzir a sequência de palavras de uma frase em francês.</li>
+          <li>Há também uma <strong>variação da tarefa muitos-para-muitos</strong>, mostrada no último modelo da Figura 1, em que o modelo gera uma saída a cada passo de tempo. Um exemplo dessa tarefa é a classificação de vídeo em nível de quadro, em que o modelo classifica cada quadro do vídeo em alguma das classes. Note que não queremos que essa predição seja função apenas do passo de tempo atual (o quadro atual do vídeo), mas também de todos os passos de tempo (quadros) que vieram antes neste vídeo.</li>
+        </ul>
+
+        <p>Em geral, RNNs nos permitem conectar uma arquitetura em que a predição em cada passo de tempo é função de todos os passos de tempo anteriores.</p>
+
+        <figure>
+          <img src="assets/types.png" alt="Tipos de arquitetura de Redes Neurais Recorrentes">
+          <figcaption><strong>Figura 1.</strong> Diferentes tipos (não exaustivos) de arquiteturas de Redes Neurais Recorrentes. Caixas vermelhas são vetores de entrada. Caixas verdes são camadas ocultas. Caixas azuis são vetores de saída.</figcaption>
+        </figure>
+
+        <h4>Por que as ConvNets existentes são insuficientes?</h4>
+
+        <p>As ConvNets existentes são insuficientes para lidar com tarefas cujas entradas e saídas têm sequências de comprimento variável. No exemplo da legendagem de vídeo, as entradas têm um número variável de quadros (por exemplo, vídeos de 10 minutos e de 10 horas) e as saídas são legendas de comprimento variável. ConvNets só recebem entradas com largura e altura fixas e não generalizam para entradas de tamanhos diferentes. Para resolver esse problema, introduzimos as Redes Neurais Recorrentes (RNNs).</p>
+
+        <h4>Rede Neural Recorrente</h4>
+
+        <p>Uma RNN é basicamente uma caixa-preta (esquerda da Figura 2) com um "estado interno" que é atualizado conforme uma sequência é processada. A cada passo de tempo, alimentamos a RNN com um vetor de entrada, e ela modifica esse estado em função do que recebe. Quando ajustamos os pesos da RNN, ela apresenta comportamentos diferentes em termos de como seu estado evolui ao receber essas entradas. Também queremos produzir uma saída com base no estado da RNN, então podemos produzir esses vetores de saída em cima da RNN (como mostra a Figura 2).</p>
+
+        <p>Se desenrolarmos um modelo de RNN (direita da Figura 2), temos entradas (por exemplo, quadros de vídeo) em diferentes passos de tempo, mostradas como \(x_1, x_2, x_3\) ... \(x_t\). A cada passo de tempo, a RNN recebe duas entradas (um quadro de entrada \(x_i\) e a representação anterior do que ela viu até então, isto é, o histórico) para gerar uma saída \(y_i\) e atualizar seu histórico, que é propagado adiante ao longo do tempo. Todos os blocos de RNN na Figura 2 (direita) são o mesmo bloco, que compartilha os mesmos parâmetros, mas tem entradas e históricos diferentes a cada passo de tempo.</p>
+
+        <figure>
+          <div class="fig-row">
+            <img src="assets/rnn_blackbox.png" alt="Caixa simplificada de uma RNN" style="max-width:16%">
+            <img src="assets/unrolledRNN.png" alt="RNN desenrolada no tempo" style="max-width:60%">
+          </div>
+          <figcaption><strong>Figura 2.</strong> Caixa simplificada de uma RNN (esquerda) e RNN desenrolada (direita).</figcaption>
+        </figure>
+
+        <p>Mais precisamente, uma RNN pode ser representada como uma fórmula de recorrência de alguma função \(f_W\) com parâmetros \(W\):</p>
+
+        <p>$$ h_t = f_W(h_{t-1}, x_t) $$</p>
+
+        <p>em que, a cada passo de tempo, ela recebe um estado anterior na forma do vetor \(h_{t-1}\), do passo de tempo anterior \(t-1\), e o vetor de entrada atual \(x_t\), para produzir o estado atual na forma do vetor \(h_t\). Uma função fixa \(f_W\) com pesos \(W\) é aplicada em cada passo de tempo, e isso nos permite usar a Rede Neural Recorrente em sequências sem precisar fixar o tamanho da sequência, porque aplicamos exatamente a mesma função em cada passo de tempo, não importa o comprimento das sequências de entrada ou de saída.</p>
+
+        <p>Na forma mais simples de RNN, que chamamos de RNN Vanilla, a rede é apenas um único estado oculto \(h\), e usamos uma fórmula de recorrência que basicamente diz como atualizar o estado oculto \(h\) em função do estado oculto anterior \(h_{t-1}\) e da entrada atual \(x_t\). Em particular, temos as matrizes de pesos \(W_{hh}\) e \(W_{xh}\), que projetam o estado oculto \(h_{t-1}\) do passo de tempo anterior e a entrada atual \(x_t\). Essas projeções são então somadas e comprimidas pela função \(tanh\) para atualizar o estado oculto \(h_t\) no passo de tempo \(t\). Essa recorrência nos diz como \(h\) muda em função do seu histórico e também da entrada atual neste passo de tempo:</p>
+
+        <p>$$ h_t = tanh(W_{hh}h_{t-1} + W_{xh}x_t) $$</p>
+
+        <figure>
+          <img src="assets/vanilla_rnn_mformula_1.png" alt="Diagrama da fórmula de recorrência da RNN Vanilla" style="max-width:80%">
+        </figure>
+
+        <p>Podemos basear as predições em \(h_t\) usando apenas mais uma projeção matricial sobre o estado oculto. Este é o caso completo mais simples em que se pode conectar uma rede neural:</p>
+
+        <p>$$ y_t = W_{hy}h_t $$</p>
+
+        <figure>
+          <img src="assets/vanilla_rnn_mformula_2.png" alt="Diagrama da saída da RNN Vanilla" style="max-width:40%">
+        </figure>
+
+        <p>Até aqui mostramos a RNN em termos dos vetores abstratos \(x, h, y\); na próxima seção, porém, podemos dar semântica a esses vetores.</p>
+
+        <h3 id="char">Exemplo de RNN: modelo de linguagem em nível de caractere</h3>
+
+        <p>Uma das formas mais simples de usar uma RNN é num modelo de linguagem em nível de caractere, por ser intuitivo de entender. Essa RNN funciona assim: alimentamos a RNN com uma sequência de caracteres e, a cada passo de tempo, pedimos que ela preveja o próximo caractere da sequência. A predição da RNN tem a forma de uma distribuição de pontuações sobre os caracteres do vocabulário, indicando o que a RNN acha que deve vir a seguir na sequência que viu até então.</p>
+
+        <p>Suponha, num exemplo bem simples (Figura 3), que temos como sequência de treinamento apenas a string \(\text{"hello"}\), e um vocabulário \(V \in \{\text{"h"}, \text{"e"}, \text{"l"}, \text{"o"}\}\) de 4 caracteres em todo o conjunto de dados. Vamos tentar fazer uma RNN aprender a prever o próximo caractere da sequência nesses dados de treinamento.</p>
+
+        <figure>
+          <img src="assets/char_level_language_model.png" alt="Modelo de linguagem em nível de caractere com RNN" style="max-width:60%">
+          <figcaption>Figura 3. Modelo de linguagem simplificado em nível de caractere com RNN.</figcaption>
+        </figure>
+
+        <p>Como mostra a Figura 3, alimentamos a RNN com um caractere de cada vez: primeiro \(\text{"h"}\), depois \(\text{"e"}\), depois \(\text{"l"}\) e, por fim, \(\text{"l"}\). Todos os caracteres são codificados como um vetor one-hot, em que apenas um bit do vetor é ligado para cada caractere único do vocabulário. Por exemplo:</p>
+
+        <p>$$
+\begin{bmatrix}1 \\ 0 \\ 0 \\ 0 \end{bmatrix} = \text{"h"}\ \
+\begin{bmatrix}0 \\ 1 \\ 0 \\ 0 \end{bmatrix} = \text{"e"}\ \
+\begin{bmatrix}0 \\ 0 \\ 1 \\ 0 \end{bmatrix} = \text{"l"}\ \
+\begin{bmatrix}0 \\ 0 \\ 0 \\ 1 \end{bmatrix} = \text{"o"}
+$$</p>
+
+        <p>Em seguida, usamos a fórmula de recorrência da seção anterior em cada passo de tempo. Suponha que começamos com \(h\) como um vetor de tamanho 3, todo de zeros. Usando essa fórmula de recorrência fixa, chegamos a uma representação tridimensional do próximo estado oculto \(h\) que, a qualquer momento, resume basicamente todos os caracteres vistos até então:</p>
+
+        <p>$$
+\begin{aligned}
+\begin{bmatrix}0.3 \\ -0.1 \\ 0.9 \end{bmatrix} &= f_W(W_{hh}\begin{bmatrix}0 \\ 0 \\ 0 \end{bmatrix} + W_{xh}\begin{bmatrix}1 \\ 0 \\ 0 \\ 0 \end{bmatrix}) \ \ \ \ &(1) \\
+\begin{bmatrix}1.0 \\ 0.3 \\ 0.1 \end{bmatrix} &= f_W(W_{hh}\begin{bmatrix}0.3 \\ -0.1 \\ 0.9 \end{bmatrix} + W_{xh}\begin{bmatrix}0 \\ 1 \\ 0 \\ 0 \end{bmatrix}) \ \ \ \ &(2) \\
+\begin{bmatrix}0.1 \\ -0.5 \\ -0.3 \end{bmatrix} &= f_W(W_{hh}\begin{bmatrix}1.0 \\ 0.3 \\ 0.1 \end{bmatrix} + W_{xh}\begin{bmatrix}0 \\ 0 \\ 1 \\ 0 \end{bmatrix}) \ \ \ \ &(3) \\
+\begin{bmatrix}-0.3 \\ 0.9 \\ 0.7 \end{bmatrix} &= f_W(W_{hh}\begin{bmatrix}0.1 \\ -0.5 \\ -0.3 \end{bmatrix} + W_{xh}\begin{bmatrix}0 \\ 0 \\ 1 \\ 0 \end{bmatrix}) \ \ \ \ &(4)
+\end{aligned}
+$$</p>
+
+        <p>Conforme aplicamos essa recorrência a cada passo de tempo, prevemos qual deve ser o próximo caractere da sequência em cada passo. Como temos quatro caracteres no vocabulário \(V\), prevemos um vetor de logits de 4 dimensões a cada passo de tempo.</p>
+
+        <p>Como mostra a Figura 3, no primeiro passo de tempo alimentamos \(\text{"h"}\), e a RNN, com a configuração atual dos pesos, calculou um vetor de logits:</p>
+
+        <p>$$
+\begin{bmatrix}1.0 \\ 2.2 \\ -3.0 \\ 4.1 \end{bmatrix} \rightarrow \begin{bmatrix}\text{"h"} \\ \text{"e"} \\ \text{"l"}\\ \text{"o"} \end{bmatrix}
+$$</p>
+
+        <p>em que a RNN considera que o próximo caractere \(\text{"h"}\) tem verossimilhança \(1.0\) de vir a seguir, \(\text{"e"}\) tem \(2.2\), \(\text{"e"}\) tem \(-3.0\) e \(\text{"o"}\) tem \(4.1\). Neste caso, a RNN sugere incorretamente que \(\text{"o"}\) deve vir a seguir, já que a pontuação \(4.1\) é a mais alta. Porém, é claro, sabemos que nesta sequência de treinamento \(\text{"e"}\) deve seguir \(\text{"h"}\), então a pontuação \(2.2\) é a resposta correta, destacada em verde na Figura 3, e queremos que ela seja alta e que todas as outras pontuações sejam baixas. A cada passo de tempo, temos um alvo para o próximo caractere da sequência; portanto, o sinal de erro é retropropagado como um gradiente da função de perda pelas conexões. Como função de perda, poderíamos escolher um classificador softmax, por exemplo, de modo que todas essas perdas fluam de cima para baixo para calcular os gradientes em todas as matrizes de pesos e descobrir como ajustá-las para que as probabilidades corretas saiam da RNN. De forma semelhante, podemos imaginar como escalar o treinamento do modelo para um conjunto de treinamento maior.</p>
+
+        <h3 id="multi">RNNs multicamadas</h3>
+
+        <p>Até aqui mostramos RNNs com apenas uma camada. Mas não estamos limitados a arquiteturas de uma única camada. Uma das formas como as RNNs são usadas hoje é de maneira mais complexa: RNNs podem ser empilhadas em múltiplas camadas, o que dá mais profundidade, e empiricamente arquiteturas mais profundas tendem a funcionar melhor (Figura 4).</p>
+
+        <figure>
+          <img src="assets/multilayer_rnn.png" alt="Exemplo de RNN multicamadas" style="max-width:40%">
+          <figcaption>Figura 4. Exemplo de RNN multicamadas.</figcaption>
+        </figure>
+
+        <p>Por exemplo, na Figura 4, há três RNNs separadas, cada uma com seu próprio conjunto de pesos. As três RNNs estão empilhadas umas sobre as outras, de modo que a entrada da segunda RNN (segunda camada de RNN na Figura 4) é o vetor de estado oculto da primeira RNN (primeira camada de RNN na Figura 4). Todas as RNNs empilhadas são treinadas em conjunto, e o diagrama da Figura 4 representa um único grafo computacional.</p>
+
+        <h3 id="lstm">Long-Short Term Memory (LSTM)</h3>
+
+        <p>Até aqui vimos apenas uma fórmula de recorrência simples para a RNN Vanilla. Na prática, raramente usamos a fórmula da RNN Vanilla. Em vez disso, usamos o que chamamos de RNN Long-Short Term Memory (LSTM).</p>
+
+        <h4>Fluxo de gradiente na RNN Vanilla e o problema do gradiente que desaparece</h4>
+
+        <p>Um bloco de RNN recebe a entrada \(x_t\) e a representação oculta anterior \(h_{t-1}\) e aprende uma transformação, que então passa por tanh para produzir a representação oculta \(h_{t}\) do próximo passo de tempo e a saída \(y_{t}\), como mostra a equação abaixo.</p>
+
+        <p>$$ h_t = tanh(W_{hh}h_{t-1} + W_{xh}x_t) $$</p>
+
+        <p>Para a retropropagação, vamos examinar como a saída no último passo de tempo afeta os pesos no primeiro passo de tempo. A derivada parcial de \(h_t\) em relação a \(h_{t-1}\) é escrita como:</p>
+
+        <p>$$ \frac{\partial h_t}{\partial h_{t-1}} =  tanh^{'}(W_{hh}h_{t-1} + W_{xh}x_t)W_{hh} $$</p>
+
+        <p>Atualizamos os pesos \(W_{hh}\) obtendo a derivada da perda no último passo de tempo \(L_{t}\) em relação a \(W_{hh}\).</p>
+
+        <p>$$
+\begin{aligned}
+\frac{\partial L_{t}}{\partial W_{hh}} = \frac{\partial L_{t}}{\partial h_{t}} \frac{\partial h_{t}}{\partial h_{t-1} } \dots \frac{\partial h_{1}}{\partial W_{hh}} \\
+= \frac{\partial L_{t}}{\partial h_{t}}(\prod_{t=2}^{T} \frac{\partial h_{t}}{\partial  h_{t-1}})\frac{\partial h_{1}}{\partial W_{hh}} \\
+= \frac{\partial L_{t}}{\partial h_{t}}(\prod_{t=2}^{T}  tanh^{'}(W_{hh}h_{t-1} + W_{xh}x_t)W_{hh}^{T-1})\frac{\partial h_{1}}{\partial W_{hh}} \\
+\end{aligned}
+$$</p>
+
+        <ul>
+          <li><strong>Gradiente que desaparece:</strong> vemos que \(tanh^{'}(W_{hh}h_{t-1} + W_{xh}x_t)\) será quase sempre menor que 1, porque tanh está sempre entre menos um e um. Assim, conforme \(t\) aumenta (isto é, com mais passos de tempo), o gradiente (\(\frac{\partial L_{t}}{\partial W}\)) diminui e se aproxima de zero. Isso leva ao problema do gradiente que desaparece, em que os gradientes de passos de tempo futuros raramente afetam os gradientes do primeiro passo de tempo. Isso é um problema quando modelamos longas sequências de entrada, porque as atualizações ficam extremamente lentas.</li>
+          <li><strong>Removendo a não linearidade (tanh):</strong> se removermos a não linearidade (tanh) para resolver o problema do gradiente que desaparece, ficamos com
+            <p>$$
+\begin{aligned}
+\frac{\partial L_{t}}{\partial W} = \frac{\partial L_{t}}{\partial h_{t}}(\prod_{t=2}^{T} W_{hh}^{T-1})\frac{\partial h_{1}}{\partial W}
+\end{aligned}
+$$</p>
+            <ul>
+              <li>Gradientes que explodem: se o maior valor singular de \(W_{hh}\) for maior que 1, os gradientes explodem, e o modelo recebe gradientes muito grandes vindos de passos de tempo futuros. A explosão de gradientes costuma levar a gradientes NaN.</li>
+              <li>Gradientes que desaparecem: se o maior valor singular de \(W_{hh}\) for menor que 1, temos o problema do gradiente que desaparece mencionado acima, que torna o aprendizado significativamente mais lento.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <p>Na prática, podemos tratar o problema da explosão de gradientes por meio do recorte de gradiente (gradient clipping), que limita os valores grandes do gradiente a um máximo. Porém, como o problema do gradiente que desaparece continua existindo quando o maior valor singular da matriz \(W_{hh}\) é menor que um, a LSTM foi projetada para evitar esse problema.</p>
+
+        <h4>Formulação da LSTM</h4>
+
+        <p>A seguir está a formulação precisa da LSTM. No passo \(t\), há um estado oculto \(h_t\) e um estado de célula \(c_t\). Tanto \(h_t\) quanto \(c_t\) são vetores de tamanho \(n\). Uma diferença entre a LSTM e a RNN Vanilla é que a LSTM tem esse estado de célula adicional \(c_t\); intuitivamente, podemos pensar que \(c_t\) armazena informação de longo prazo. A LSTM pode ler, apagar e escrever informação nessa célula \(c_t\). A LSTM altera a célula \(c_t\) por meio de três portas especiais: \(i, f, o\), que correspondem às portas de "entrada" (input), "esquecimento" (forget) e "saída" (output). Os valores dessas portas variam de fechada (0) a aberta (1). Todas as portas \(i, f, o\) são vetores de tamanho \(n\).</p>
+
+        <p>A cada passo de tempo, temos um vetor de entrada \(x_t\), o estado oculto anterior \(h_{t-1}\) e o estado de célula anterior \(c_{t-1}\), e a LSTM calcula o próximo estado oculto \(h_t\) e o próximo estado de célula \(c_t\) no passo de tempo \(t\) da seguinte forma:</p>
+
+        <p>$$
+\begin{aligned}
+f_t &= \sigma(W_{hf}h_{t_1} + W_{xf}x_t) \\
+i_t &= \sigma(W_{hi}h_{t_1} + W_{xi}x_t) \\
+o_t &= \sigma(W_{ho}h_{t_1} + W_{xo}x_t) \\
+g_t &= \text{tanh}(W_{hg}h_{t_1} + W_{xg}x_t) \\
+\end{aligned}
+$$</p>
+
+        <figure>
+          <img src="assets/lstm_mformula_1.png" alt="Diagrama das portas da LSTM" style="max-width:50%">
+        </figure>
+
+        <p>$$
+\begin{aligned}
+c_t &= f_t \odot c_{t-1} + i_t \odot g_t \\
+h_t &= o_t \odot \text{tanh}(c_t) \\
+\end{aligned}
+$$</p>
+
+        <figure>
+          <img src="assets/lstm_mformula_2.png" alt="Diagrama da atualização do estado de célula e do estado oculto da LSTM" style="max-width:40%">
+        </figure>
+
+        <p>em que \(\odot\) é o produto de Hadamard, elemento a elemento. Nas fórmulas acima, \(g_t\) é um cálculo intermediário, usado depois com a porta \(o\).</p>
+
+        <p>Como os valores das portas \(f, i, o\) variam de 0 a 1, porque foram comprimidos pela função sigmoide \(\sigma\), ao multiplicá-los elemento a elemento vemos que:</p>
+
+        <ul>
+          <li><strong>Porta de esquecimento:</strong> a porta de esquecimento \(f_t\) no passo de tempo \(t\) controla quanta informação precisa ser "removida" do estado de célula anterior \(c_{t-1}\). Essa porta aprende a apagar representações ocultas de passos de tempo anteriores, e é por isso que a LSTM tem duas representações ocultas: \(h_t\) e o estado de célula \(c_t\). Esse \(c_t\) é propagado ao longo do tempo e aprende se deve esquecer ou não o estado de célula anterior.</li>
+          <li><strong>Porta de entrada:</strong> a porta de entrada \(i_t\) no passo de tempo \(t\) controla quanta informação precisa ser "adicionada" ao próximo estado de célula \(c_t\) a partir do estado oculto anterior \(h_{t-1}\) e da entrada \(x_t\). Em vez de tanh, a porta de "entrada" \(i\) usa uma função sigmoide, que converte as entradas em valores entre zero e um. Ela serve como um interruptor, em que os valores são quase sempre zero ou quase sempre um. Essa porta de "entrada" decide se aproveita a saída da RNN produzida pela porta "gate" \(g\), multiplicando essa saída pela porta de entrada \(i\).</li>
+          <li><strong>Porta de saída:</strong> a porta de saída \(o_t\) no passo de tempo \(t\) controla quanta informação precisa ser "mostrada" como saída no estado oculto atual \(h_t\).</li>
+        </ul>
+
+        <p>A ideia central da LSTM é o estado de célula, a linha horizontal que passa entre os passos de tempo recorrentes. Pode-se imaginar o estado de célula como uma espécie de rodovia de informação que atravessa toda a cadeia, com apenas algumas interações lineares menores. Com a formulação acima, é fácil a informação simplesmente fluir por essa rodovia (Figura 5). Assim, mesmo com várias LSTMs empilhadas, podemos ter um fluxo de gradiente ininterrupto, em que os gradientes voltam pelos estados de célula, em vez de pelos estados ocultos \(h\), sem desaparecer a cada passo de tempo.</p>
+
+        <p>Isso resolve em grande parte o problema dos gradientes que desaparecem ou explodem, descrito acima. A Figura 5 também mostra que o gradiente contém um vetor de ativações da porta de "esquecimento". Isso permite controlar melhor os valores dos gradientes, por meio de atualizações adequadas dos parâmetros dessa porta.</p>
+
+        <figure>
+          <img src="assets/lstm_highway.png" alt="Rodovia do estado de célula da LSTM" style="max-width:70%">
+          <figcaption>Figura 5. Rodovia do estado de célula da LSTM.</figcaption>
+        </figure>
+
+        <h4>A LSTM resolve o problema do gradiente que desaparece?</h4>
+
+        <p>A arquitetura LSTM facilita que a RNN preserve informação ao longo de muitos passos de tempo recorrentes. Por exemplo, se a porta de esquecimento estiver em 1 e a porta de entrada em 0, a informação do estado de célula será sempre preservada ao longo de muitos passos de tempo recorrentes. Numa RNN Vanilla, ao contrário, é bem mais difícil preservar informação nos estados ocultos ao longo dos passos de tempo usando apenas uma única matriz de pesos.</p>
+
+        <p>LSTMs não garantem que não haverá problemas de gradientes que desaparecem ou explodem, mas oferecem uma forma mais fácil de o modelo aprender dependências de longa distância.</p>
+      </section>
+
+    </div>
+    <div class="material-group">
+      <h3>Slides</h3>
+      <ul>
+        <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_7.pdf" target="_blank" rel="noopener"><span><span class="icon">📄</span>Slides <span class="source">· Stanford CS231n</span></span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Para explorar</h3>
+      <ul>
+        <li><a href="http://www.deeplearningbook.org/contents/rnn.html" target="_blank" rel="noopener" title="Capítulo sobre modelagem de sequências com redes recorrentes."><span><span class="icon">🔗</span>Deep Learning Book: capítulo sobre RNNs</span></a></li>
+        <li><a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/" target="_blank" rel="noopener" title="Explicação visual do funcionamento das redes LSTM."><span><span class="icon">🔗</span>Understanding LSTM Networks</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

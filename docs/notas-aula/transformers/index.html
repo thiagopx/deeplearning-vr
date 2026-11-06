@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transformers — Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Notas de aula sobre a arquitetura Transformer — tradução para português (gerada por IA) do material do curso CS231n, Stanford University. Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<style>
+  :root{
+    /* ⚠️ PLACEHOLDER — spec/index.md ainda não tem o hex oficial do verde
+       institucional do Ifes confirmado (ifes.edu.br/download-de-marcas).
+       Estes dois tons são um verde genérico de espera, NÃO a cor oficial —
+       trocar assim que o hex real for confirmado. */
+    --ifes-verde: #3a9169;
+    --ifes-verde-escuro: #256b4a;
+    --tinta: #1c1c1c;
+    --fundo: #0e1414;
+    --fundo-card: #172020;
+    --muted: #8a978f;
+
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--fundo);
+    color: #e7ece9;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  a { color: var(--ifes-verde); }
+  a:visited { color: var(--ifes-verde); }
+
+  .topbar{
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid #22302a;
+    font-size: .85rem;
+  }
+  .topbar a{ color: var(--muted); text-decoration: none; }
+  .topbar a:hover{ color: var(--ifes-verde); }
+
+  main{
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .6rem;
+  }
+  .section-header{
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .section-badge{
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .9rem;
+    background: var(--fundo-card);
+    color: var(--ifes-verde);
+    border: 1px solid #22302a;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2{ font-size: 1.6rem; margin: 0; }
+  h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
+  h3{ font-size: 1.3rem; margin-top: 2.5rem; }
+  h4{ font-size: 1.1rem; margin-top: 2rem; color: #d6ded9; }
+  h5{ font-size: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+  .ai-disclaimer{
+    display: flex;
+    gap: .6rem;
+    background: var(--fundo-card);
+    border: 1px solid #2a3a32;
+    border-left: 3px solid var(--ifes-verde);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    color: #cdd6d1;
+    margin-bottom: 2rem;
+  }
+
+  .source-credit{
+    font-size: .82rem;
+    color: var(--muted);
+    border-top: 1px solid #22302a;
+    padding-top: .6rem;
+    margin-top: 3rem;
+  }
+  .translated-source:first-of-type .source-credit{ margin-top: 0; }
+  .source-credit a{ text-decoration: none; }
+  .source-credit a:hover{ text-decoration: underline; }
+
+  .toc{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-size: .88rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc p{ margin: 0 0 .5rem; color: var(--muted); text-transform: uppercase; font-size: .74rem; letter-spacing: .06em; }
+  .toc ul{ margin: 0; padding-left: 1.1rem; }
+  .toc li{ margin: .2rem 0; }
+  .toc a{ text-decoration: none; }
+  .toc a:hover{ text-decoration: underline; }
+
+  p{ margin: 0 0 1rem; }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: .4rem; }
+  strong{ color: #f1f5f2; }
+  em{ font-style: italic; }
+
+  code{
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--fundo-card);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  pre{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+  }
+  pre code{ background: none; padding: 0; font-size: .84em; line-height: 1.55; }
+
+  figure{ margin: 1.5rem 0; text-align: center; }
+  figure img{ max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #22302a; }
+  figure .fig-row{ display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; align-items: flex-start; }
+  figure .fig-row img{ max-width: 100%; }
+  figure.fig-left{ text-align: left; }
+  figcaption{ font-size: .82rem; color: var(--muted); margin-top: .6rem; text-align: left; }
+
+  blockquote{
+    margin: 1.5rem 0;
+    padding: .8rem 1.1rem;
+    border-left: 3px solid var(--ifes-verde);
+    background: var(--fundo-card);
+    color: #d6ded9;
+    font-style: italic;
+  }
+  blockquote p:last-child{ margin-bottom: 0; }
+
+  .material-group{ margin-top: 2.5rem; }
+  .material-group h3{ margin-top: 0; font-size: 1.1rem; }
+  .material-group ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-start; }
+  .material-group li{ margin: 0; }
+  .material-group a{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 12px;
+    padding: .4rem .85rem;
+    font-size: .85rem;
+    text-decoration: none;
+    color: #e7ece9;
+  }
+  .material-group a:hover{ border-color: var(--ifes-verde); }
+  .material-group .icon{ margin-right: .3em; }
+  .material-group .source{ color: var(--muted); font-size: .82em; }
+
+  @media (max-width: 600px){
+    main{ padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head><body>
+
+<div class="topbar">
+  <a href="../../index.html">← Voltar à página do curso</a>
+</div>
+
+<main>
+  <section class="section-block" id="08_transformers">
+    <header class="section-header-wrap">
+      <p class="eyebrow">Aula 08 · Atenção e Transformers</p>
+      <div class="section-header">
+        <span class="section-badge">08</span>
+        <h2>Transformers</h2>
+      </div>
+    </header>
+
+    <div class="translated-notes">
+      <p class="ai-disclaimer">⚠️ Este conteúdo é uma tradução para português, gerada automaticamente por IA, a partir do material original em inglês do curso CS231n (Stanford University). Consulte o link "Fonte original" abaixo para o texto original.</p>
+
+      <section class="translated-source" id="fonte-transformers">
+        <p class="source-credit">Fonte original (inglês): <a href="https://cs231n.github.io/transformers/" target="_blank" rel="noopener">Transformer Overview · CS231n, Stanford University ↗</a></p>
+
+        <nav class="toc">
+          <p>Nesta seção</p>
+          <ul>
+            <li><a href="#overview">Visão geral dos Transformers</a></li>
+            <li><a href="#why">Por que Transformers?</a></li>
+            <li><a href="#multihead">Atenção multi-head</a></li>
+            <li><a href="#tips">Dicas sobre atenção multi-head</a></li>
+            <li><a href="#steps">Etapas do Transformer: encoder-decoder</a></li>
+          </ul>
+        </nav>
+
+        <h4 id="overview">Visão geral do Transformer</h4>
+
+        <p>Em <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">"Attention Is All You Need"</a>, Vaswani et al. apresentaram o Transformer, que introduz paralelismo e permite aos modelos aprender dependências de longo alcance, ajudando assim a resolver dois problemas centrais das RNNs: a lentidão do treinamento e a dificuldade de codificar dependências de longo alcance. Transformers são altamente escaláveis e paralelizáveis, o que permite treinamento mais rápido, modelos maiores e melhor desempenho em tarefas de visão e linguagem. Os Transformers estão começando a substituir RNNs e LSTMs e podem, em breve, substituir também as convoluções.</p>
+
+        <h4 id="why">Por que Transformers?</h4>
+
+        <ul>
+          <li>Transformers são ótimos para trabalhar com sequências de entrada longas, já que o cálculo de atenção olha para todas as entradas. Em contraste, RNNs têm dificuldade para codificar dependências de longo alcance. LSTMs são bem melhores para capturar dependências de longo alcance, por usarem as portas de entrada, saída e esquecimento.</li>
+          <li>Transformers podem operar sobre conjuntos não ordenados ou sobre sequências ordenadas com codificações posicionais (usando a codificação posicional para acrescentar ordem aos conjuntos). Em contraste, RNN/LSTM esperam uma sequência ordenada de entradas.</li>
+          <li>Transformers usam computação paralela, em que todas as pontuações de alinhamento e de atenção de todas as entradas podem ser calculadas em paralelo. Em contraste, RNN/LSTM usam computação sequencial, já que o estado oculto de um passo de tempo só pode ser calculado depois dos estados anteriores, o que as torna frequentemente lentas para treinar.</li>
+        </ul>
+
+        <h4 id="multihead">Atenção multi-head</h4>
+
+        <p>Vamos relembrar os conceitos da unidade de atenção para nos ajudar com os Transformers.</p>
+
+        <ul>
+          <li><strong>Atenção por produto escalar:</strong></li>
+        </ul>
+
+        <figure>
+          <img src="assets/dotproduct.png" alt="Atenção por produto escalar" style="max-width:80%">
+          <figcaption>Atenção por produto escalar</figcaption>
+        </figure>
+
+        <p>Com a consulta q (D,), os vetores de valor {v_1,...,v_n}, em que v_i (D,), os vetores de chave {k_1,...,k_n}, em que k_i (D,), os pesos de atenção a_i e a saída c (D,). A saída é uma média ponderada dos vetores de valor.</p>
+
+        <ul>
+          <li><strong>Self-Attention:</strong> obtemos valores, chaves e consultas a partir da entrada.</li>
+        </ul>
+
+        <figure>
+          <img src="assets/vkq.png" alt="Valor, chave e consulta" style="max-width:80%">
+          <figcaption>Valor, chave e consulta</figcaption>
+        </figure>
+
+        <p>Combinando os dois itens acima, podemos agora implementar a atenção multi-head por produto escalar com escala para Transformers.</p>
+
+        <ul>
+          <li><strong>Atenção multi-head por produto escalar com escala:</strong> aprendemos uma matriz de parâmetros V_i, K_i, Q_i (DxD) para cada cabeça i, o que aumenta a expressividade do modelo para prestar atenção em diferentes partes da entrada. Aplicamos um termo de escala (1/sqrt(d/h)) à atenção por produto escalar descrita antes, para reduzir o efeito de vetores de grande magnitude.</li>
+        </ul>
+
+        <figure>
+          <img src="assets/softmax.png" alt="Atenção multi-head por produto escalar com escala" style="max-width:80%">
+          <figcaption>Atenção multi-head por produto escalar com escala</figcaption>
+        </figure>
+
+        <p>Podemos então aplicar dropout, gerar a saída da camada de atenção e, por fim, adicionar uma transformação linear à saída da operação de atenção, o que permite ao modelo aprender a relação entre as cabeças e, assim, melhorar sua expressividade.</p>
+
+        <h4 id="tips">Atenção multi-head passo a passo, com as dimensões intermediárias</h4>
+
+        <p>Muita coisa acontece ao longo da atenção multi-head, então esperamos que este diagrama ajude a esclarecer as etapas intermediárias e como as dimensões mudam depois de cada etapa!</p>
+
+        <figure>
+          <img src="assets/multiheadgraph.PNG" alt="Atenção multi-head passo a passo, com as dimensões intermediárias" style="max-width:80%">
+          <figcaption>Atenção multi-head passo a passo, com as dimensões intermediárias</figcaption>
+        </figure>
+
+        <h4>Algumas dicas sobre Permute e Reshape</h4>
+
+        <p>Para criar as múltiplas cabeças, dividimos a dimensão de embedding pelo número de cabeças e usamos Reshape (por exemplo, Reshape nos permite ir do formato (N x S x D) para (N x S x H x D//H)). É importante notar que Reshape não muda a ordem dos dados. Ele apenas pega os dados originais e os "remodela" nas dimensões fornecidas. Usamos Permute (ou Transpose) para reorganizar a ordem das dimensões dos dados (por exemplo, Permute nos permite reorganizar as dimensões de (N x S x H x D//H) para (N x H x S x D//H)). Note por que precisamos usar Permute antes de Reshape depois do último MatMul. Nosso tensor tinha o formato (N x H x S x D//H), mas, para remodelá-lo para (N x S x D), primeiro precisamos garantir que as dimensões H e D//H estejam uma ao lado da outra, porque Reshape não muda a ordem dos dados. Por isso, usamos Permute primeiro para reorganizar as dimensões de (N x H x S x D//H) para (N x S x H x D//H) e depois podemos usar Reshape para obter o formato (N x S x D).</p>
+
+        <h4 id="steps">Etapas do Transformer: encoder-decoder</h4>
+
+        <h4>Bloco Encoder</h4>
+
+        <p>O papel do bloco Encoder é codificar todas as características da imagem (em que as características espaciais são extraídas por uma CNN pré-treinada) num conjunto de vetores de contexto. Os vetores de contexto produzidos são uma representação da sequência de entrada num espaço de dimensão maior. Definimos o Encoder como c = T_W(z), em que z são as características espaciais da CNN e T_w(.) é o encoder do Transformer. No artigo "Attention Is All You Need", é usado um encoder de Transformer composto por N blocos de encoder (N = 6, D = 512).</p>
+
+        <figure>
+          <img src="assets/encoder.png" alt="Bloco Encoder" style="max-width:80%">
+          <figcaption>Bloco Encoder</figcaption>
+        </figure>
+
+        <p>Vamos percorrer as etapas do bloco Encoder!</p>
+
+        <ul>
+          <li>Primeiro recebemos um conjunto de vetores de entrada X (em que cada vetor de entrada representa uma palavra, por exemplo).</li>
+          <li>Depois adicionamos a codificação posicional aos vetores de entrada.</li>
+          <li>Passamos os vetores com codificação posicional pela <strong>camada de self-attention multi-head</strong> (em que cada vetor presta atenção em todos os outros). A saída dessa camada nos dá um conjunto de vetores de contexto.</li>
+          <li>Temos uma conexão residual depois da camada de self-attention multi-head, que nos permite contornar a camada de atenção se ela não for necessária.</li>
+          <li>Depois aplicamos normalização de camada (Layer Normalization) à saída, que normaliza cada vetor individualmente.</li>
+          <li>Depois aplicamos uma MLP a cada vetor individualmente.</li>
+          <li>Temos então outra conexão residual.</li>
+          <li>Uma última normalização de camada na saída.</li>
+          <li>E, por fim, o conjunto de vetores de contexto C é produzido!</li>
+        </ul>
+
+        <h4>Bloco Decoder</h4>
+
+        <p>O bloco Decoder recebe o conjunto de vetores de contexto C produzido pelo bloco Encoder e um conjunto de vetores de entrada X e produz um conjunto de vetores Y que define a sequência de saída. Definimos o Decoder como y_t = T_S(y_{0:t-1},c), em que T_D(.) é o decoder do Transformer. No artigo "Attention Is All You Need", é usado um decoder de Transformer composto por N blocos de decoder (N = 6, D = 512).</p>
+
+        <figure>
+          <img src="assets/decoder.png" alt="Bloco Decoder" style="max-width:80%">
+          <figcaption>Bloco Decoder</figcaption>
+        </figure>
+
+        <p>Vamos percorrer as etapas do bloco Decoder!</p>
+
+        <ul>
+          <li>Recebemos o conjunto de vetores de entrada X e os vetores de contexto C (produzidos pelo bloco Encoder).</li>
+          <li>Depois adicionamos a codificação posicional aos vetores de entrada X.</li>
+          <li>Passamos os vetores com codificação posicional pela <strong>camada de self-attention multi-head mascarada</strong>. A máscara garante que só prestemos atenção nas entradas anteriores.</li>
+          <li>Temos uma conexão residual depois dessa camada, que nos permite contornar a camada de atenção se ela não for necessária.</li>
+          <li>Depois aplicamos normalização de camada à saída, que normaliza cada vetor individualmente.</li>
+          <li>Em seguida, passamos a saída por outra <strong>camada de atenção multi-head</strong>, que recebe os vetores de contexto produzidos pelo bloco Encoder e a saída da normalização de camada. Nesta etapa, a chave vem do conjunto de vetores de contexto C, o valor vem do conjunto de vetores de contexto C, e a consulta vem da saída da etapa de normalização de camada.</li>
+          <li>Temos então outra conexão residual.</li>
+          <li>Aplicamos outra normalização de camada.</li>
+          <li>Aplicamos uma MLP a cada vetor individualmente.</li>
+          <li>Outra conexão residual.</li>
+          <li>Uma última normalização de camada.</li>
+          <li>E, por fim, passamos a saída por uma camada totalmente conectada, que produz o conjunto final de vetores de saída Y, a sequência de saída.</li>
+        </ul>
+
+        <h4>Notas adicionais sobre normalização de camada e MLP</h4>
+
+        <p><strong>Normalização de camada:</strong> como visto na implementação dos blocos Encoder e Decoder, usamos normalização de camada depois das conexões residuais, nos dois blocos. Lembre-se de que, na normalização de camada, normalizamos ao longo da dimensão das características (ou seja, aplicamos LayerNorm sobre as características da imagem). Usar normalização de camada nesses pontos ajuda a evitar problemas de gradientes que desaparecem ou explodem, ajuda a estabilizar a rede e pode reduzir o tempo de treinamento.</p>
+
+        <p><strong>MLP:</strong> tanto o bloco encoder quanto o decoder contêm redes feed-forward totalmente conectadas, aplicadas por posição, "aplicadas a cada posição separadamente e de forma idêntica" (Vaswani et al.). As transformações lineares usam parâmetros diferentes entre as camadas. FFN(x) = max(0, xW_1 + b_1)W_2 + b_2. Além disso, a combinação de uma camada de self-attention com uma camada feed-forward ponto a ponto reduz a complexidade exigida por camadas convolucionais.</p>
+
+        <h4>Recursos adicionais</h4>
+
+        <p>Recursos adicionais relacionados à implementação:</p>
+
+        <ul>
+          <li><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">"Attention Is All You Need"</a></li>
+        </ul>
+      </section>
+
+    </div>
+    <div class="material-group">
+      <h3>Slides</h3>
+      <ul>
+        <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_8.pdf" target="_blank" rel="noopener"><span><span class="icon">📄</span>Slides <span class="source">· Stanford CS231n</span></span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Notebooks</h3>
+      <ul>
+        <li><a href="https://colab.research.google.com/drive/1Ek5ppNWK2BhA5DZDxUEp4BsqjyCohGLj?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>LSTM with Attention</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1TV3AWY3-ipw_6aujp210blXxwOhuZSf_?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Self-Attention from Scratch</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1gR7S0278GjLZLp18psifGrO939uUYYcM?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Transformer from Scratch</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1_fEIGkORzZ04JHIhKOEgKJgZe_BW58p-?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Transformer with PyTorch and Hugging Face</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1QOtljTCrWqe-XxJTWeOZrimpgU7wl2R0?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Vision Transformer with Hugging Face</span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Para explorar</h3>
+      <ul>
+        <li><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener" title="Paper original dos Transformers."><span><span class="icon">🔗</span>Attention Is All You Need</span></a></li>
+        <li><a href="https://lilianweng.github.io/posts/2018-06-24-attention/" target="_blank" rel="noopener" title="Blog de Lilian Weng sobre mecanismos de atenção."><span><span class="icon">🔗</span>Attention? Attention!</span></a></li>
+        <li><a href="http://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener" title="Explicação visual da arquitetura Transformer, por Jay Alammar."><span><span class="icon">🔗</span>The Illustrated Transformer</span></a></li>
+        <li><a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener" title="Paper sobre Transformers para reconhecimento de imagens."><span><span class="icon">🔗</span>ViT</span></a></li>
+        <li><a href="https://www.youtube.com/watch?v=TrdevFK_am4" target="_blank" rel="noopener" title="Vídeo sobre o paper do ViT."><span><span class="icon">🎥</span>ViT (vídeo)</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

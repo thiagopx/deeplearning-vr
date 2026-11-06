@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atenção — Aprendizado Profundo para Reconhecimento Visual</title>
+<meta name="description" content="Notas de aula sobre mecanismos de atenção — tradução para português (gerada por IA) do material do curso CS231n, Stanford University. Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+<style>
+  :root{
+    /* ⚠️ PLACEHOLDER — spec/index.md ainda não tem o hex oficial do verde
+       institucional do Ifes confirmado (ifes.edu.br/download-de-marcas).
+       Estes dois tons são um verde genérico de espera, NÃO a cor oficial —
+       trocar assim que o hex real for confirmado. */
+    --ifes-verde: #3a9169;
+    --ifes-verde-escuro: #256b4a;
+    --tinta: #1c1c1c;
+    --fundo: #0e1414;
+    --fundo-card: #172020;
+    --muted: #8a978f;
+
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: var(--fundo);
+    color: #e7ece9;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  a { color: var(--ifes-verde); }
+  a:visited { color: var(--ifes-verde); }
+
+  .topbar{
+    padding: .9rem 1.25rem;
+    border-bottom: 1px solid #22302a;
+    font-size: .85rem;
+  }
+  .topbar a{ color: var(--muted); text-decoration: none; }
+  .topbar a:hover{ color: var(--ifes-verde); }
+
+  main{
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 4rem;
+  }
+
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .6rem;
+  }
+  .section-header{
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.75rem;
+  }
+  .section-badge{
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: .9rem;
+    background: var(--fundo-card);
+    color: var(--ifes-verde);
+    border: 1px solid #22302a;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  h2{ font-size: 1.6rem; margin: 0; }
+  h2, h3, h4, h5 { font-weight: 600; line-height: 1.3; }
+  h3{ font-size: 1.3rem; margin-top: 2.5rem; }
+  h4{ font-size: 1.1rem; margin-top: 2rem; color: #d6ded9; }
+  h5{ font-size: 1rem; margin-top: 1.5rem; color: var(--muted); }
+
+  .ai-disclaimer{
+    display: flex;
+    gap: .6rem;
+    background: var(--fundo-card);
+    border: 1px solid #2a3a32;
+    border-left: 3px solid var(--ifes-verde);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    font-size: .88rem;
+    color: #cdd6d1;
+    margin-bottom: 2rem;
+  }
+
+  .source-credit{
+    font-size: .82rem;
+    color: var(--muted);
+    border-top: 1px solid #22302a;
+    padding-top: .6rem;
+    margin-top: 3rem;
+  }
+  .translated-source:first-of-type .source-credit{ margin-top: 0; }
+  .source-credit a{ text-decoration: none; }
+  .source-credit a:hover{ text-decoration: underline; }
+
+  .toc{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: .9rem 1.1rem;
+    font-size: .88rem;
+    margin: 1rem 0 2rem;
+  }
+  .toc p{ margin: 0 0 .5rem; color: var(--muted); text-transform: uppercase; font-size: .74rem; letter-spacing: .06em; }
+  .toc ul{ margin: 0; padding-left: 1.1rem; }
+  .toc li{ margin: .2rem 0; }
+  .toc a{ text-decoration: none; }
+  .toc a:hover{ text-decoration: underline; }
+
+  p{ margin: 0 0 1rem; }
+  ul, ol{ padding-left: 1.3rem; }
+  li{ margin-bottom: .4rem; }
+  strong{ color: #f1f5f2; }
+  em{ font-style: italic; }
+
+  code{
+    font-family: var(--font-mono);
+    font-size: .88em;
+    background: var(--fundo-card);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+  pre{
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+  }
+  pre code{ background: none; padding: 0; font-size: .84em; line-height: 1.55; }
+
+  figure{ margin: 1.5rem 0; text-align: center; }
+  figure img{ max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #22302a; }
+  figure .fig-row{ display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; align-items: flex-start; }
+  figure .fig-row img{ max-width: 100%; }
+  figure.fig-left{ text-align: left; }
+  figcaption{ font-size: .82rem; color: var(--muted); margin-top: .6rem; text-align: left; }
+
+  blockquote{
+    margin: 1.5rem 0;
+    padding: .8rem 1.1rem;
+    border-left: 3px solid var(--ifes-verde);
+    background: var(--fundo-card);
+    color: #d6ded9;
+    font-style: italic;
+  }
+  blockquote p:last-child{ margin-bottom: 0; }
+
+  .material-group{ margin-top: 2.5rem; }
+  .material-group h3{ margin-top: 0; font-size: 1.1rem; }
+  .material-group ul{ list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-start; }
+  .material-group li{ margin: 0; }
+  .material-group a{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .1rem;
+    background: var(--fundo-card);
+    border: 1px solid #22302a;
+    border-radius: 12px;
+    padding: .4rem .85rem;
+    font-size: .85rem;
+    text-decoration: none;
+    color: #e7ece9;
+  }
+  .material-group a:hover{ border-color: var(--ifes-verde); }
+  .material-group .icon{ margin-right: .3em; }
+  .material-group .source{ color: var(--muted); font-size: .82em; }
+
+  @media (max-width: 600px){
+    main{ padding: 1.5rem 1rem 3rem; }
+  }
+</style>
+</head><body>
+
+<div class="topbar">
+  <a href="../../index.html">← Voltar à página do curso</a>
+</div>
+
+<main>
+  <section class="section-block" id="08_transformers">
+    <header class="section-header-wrap">
+      <p class="eyebrow">Aula 08 · Atenção e Transformers</p>
+      <div class="section-header">
+        <span class="section-badge">08</span>
+        <h2>Atenção</h2>
+      </div>
+    </header>
+
+    <div class="translated-notes">
+      <p class="ai-disclaimer">⚠️ Este conteúdo é uma tradução para português, gerada automaticamente por IA, a partir do material original em inglês do curso CS231n (Stanford University). Consulte o link "Fonte original" abaixo para o texto original.</p>
+
+      <section class="translated-source" id="fonte-attention">
+        <p class="source-credit">Fonte original (inglês): <a href="https://cs231n.github.io/attention/" target="_blank" rel="noopener">Attention · CS231n, Stanford University ↗</a></p>
+
+        <nav class="toc">
+          <p>Nesta seção</p>
+          <ul>
+            <li><a href="#motivation">Motivação</a></li>
+            <li><a href="#attention">Camadas de atenção gerais</a>
+              <ul>
+                <li><a href="#operations">Operações</a></li>
+              </ul>
+            </li>
+            <li><a href="#self">Self-Attention</a>
+              <ul>
+                <li><a href="#masked">Camadas de self-attention mascarada</a></li>
+                <li><a href="#multihead">Camadas de self-attention multi-head</a></li>
+              </ul>
+            </li>
+            <li><a href="#summary">Resumo</a></li>
+            <li><a href="#resources">Recursos adicionais</a></li>
+          </ul>
+        </nav>
+
+        <p>Nas seções anteriores, discutimos pilares do deep learning moderno, como Redes Neurais Convolucionais e Redes Neurais Recorrentes. Esta seção é dedicada a mais uma camada, a camada de atenção, que forma uma nova primitiva para aplicações modernas de Visão Computacional e PLN.</p>
+
+        <h4 id="motivation">Motivação</h4>
+
+        <p>Para motivar a camada de atenção, vamos olhar para uma aplicação de exemplo, a legendagem de imagens, e ver qual é o problema de usar apenas CNNs e RNNs nela.</p>
+
+        <p>A figura abaixo mostra um pipeline que aplica essas redes a uma imagem para gerar uma legenda. Primeiro ele usa um extrator de características de uma CNN pré-treinada para resumir a imagem, resultando num vetor de características da imagem \(c = h_0\). Depois, aplica uma rede recorrente para gerar tokens repetidamente, um a cada passo. Após cinco passos de tempo, o modelo de legendagem obtém a frase: "surfer riding on wave" ("surfista pegando onda").</p>
+
+        <figure>
+          <img src="assets/captioning.png" alt="Pipeline de legendagem de imagens com CNN e RNN" style="max-width:80%">
+        </figure>
+
+        <p>Qual é o problema aqui? Note que o modelo depende inteiramente do vetor de contexto \(c\) para escrever a legenda: tudo o que ele quer dizer sobre a imagem precisa estar comprimido nesse vetor. E se quisermos ser bem específicos e descrever cada mínimo detalhe da imagem, como a cor da camisa do surfista ou a direção das ondas? Obviamente, um vetor de tamanho finito não consegue codificar todas essas possibilidades, especialmente se o número desejado de tokens chegar às centenas ou aos milhares.</p>
+
+        <p>A ideia central da camada de atenção vem do sistema de atenção visual humano: quando recebemos uma cena visual e tentamos entender uma região específica dela, focamos a visão nessa região. A camada de atenção simula esse processo e <em>presta atenção</em> a diferentes partes da imagem enquanto gera as palavras que a descrevem.</p>
+
+        <p>Com a atenção em jogo, um diagrama semelhante do pipeline de legendagem de imagens fica como o abaixo. Qual é a principal diferença? Incorporamos duas matrizes adicionais, uma de <em>pontuações de alinhamento</em> e outra de <em>atenção</em>, e temos <em>vetores de contexto diferentes</em> \(c_i\) em passos diferentes. A cada passo, o modelo usa um perceptron multicamadas para processar o vetor oculto atual \(h_i\) e as características da imagem, gerando uma matriz de pontuações de alinhamento de formato \(H \times W\). Essa matriz de pontuações passa então por uma camada softmax, que a converte numa matriz de atenção com pesos que somam um. Os pesos da matriz de atenção são então multiplicados elemento a elemento pelas características da imagem, o que permite ao modelo focar de forma diferente nas regiões da imagem. Todo esse processo é diferenciável e permite ao modelo escolher seus próprios pesos de atenção.</p>
+
+        <figure>
+          <img src="assets/captioning-attention.png" alt="Pipeline de legendagem de imagens com atenção" style="max-width:60%">
+        </figure>
+
+        <h4 id="attention">Camadas de atenção gerais</h4>
+
+        <p>Embora a seção anterior detalhe a aplicação de uma camada de atenção à legendagem de imagens, apresentamos agora uma formulação mais geral e fundamentada da camada de atenção, descontextualizando-a da legendagem de imagens e das redes recorrentes. Num cenário geral, a camada de atenção é uma camada com vetores de entrada e de saída e cinco operações principais, ilustradas nos diagramas a seguir.</p>
+
+        <figure>
+          <img src="assets/attention.png" alt="Camada de atenção geral e camada de self-attention" style="max-width:70%">
+          <figcaption>Esquerda: uma camada de atenção geral. Direita: uma camada de self-attention.</figcaption>
+        </figure>
+
+        <p>Como ilustrado, as entradas de uma camada de atenção contêm vetores de entrada \(X\) e vetores de consulta (query) \(Q\). Os vetores de entrada \(X\) têm formato \(N \times D_x\), enquanto os vetores de consulta \(Q\) têm formato \(M \times D_k\). No exemplo da legendagem de imagens, os vetores de entrada são as características da imagem, e os vetores de consulta são os estados ocultos da rede recorrente. As saídas de uma camada de atenção são os vetores \(Y\) de formato \(M \times D_k\), no topo.</p>
+
+        <p>A maior parte das operações de atenção está ilustrada nas grades coloridas no meio e contém dois tipos principais de operação: os mapeamentos lineares de chave e valor, e as operações de alinhamento e atenção que vimos antes no exemplo da legendagem de imagens.</p>
+
+        <h5 id="operations">Operações</h5>
+
+        <p><strong>Transformações lineares de chave e valor.</strong> Essas operações são transformações lineares que convertem os vetores de entrada \(X\) em dois conjuntos alternativos de vetores:</p>
+
+        <ul>
+          <li>Vetores de chave \(K\): obtidos pela equação linear \(K = X W_k\), em que \(W_k\) é uma matriz de pesos aprendível de formato \(D_x \times D_k\), que converte da dimensão do vetor de entrada \(D_x\) para a dimensão da chave \(D_k\). As chaves resultantes têm a mesma dimensão dos vetores de consulta, para permitir o alinhamento.</li>
+          <li>Vetores de valor \(V\): de forma semelhante, a equação para obter esses vetores é a regra linear \(V = X W_v\), em que \(W_v\) tem formato \(D_x \times D_v\). Os vetores de valor têm a mesma dimensão dos vetores de saída.</li>
+        </ul>
+
+        <p>Ao aplicar essas camadas totalmente conectadas sobre as entradas, o modelo de atenção ganha expressividade adicional.</p>
+
+        <p><strong>Alinhamento.</strong> O núcleo da camada de atenção são duas operações fundamentais: alinhamento e atenção. Na etapa de alinhamento, embora funções mais complexas sejam possíveis, costuma-se optar por uma função simples entre vetores: produtos escalares par a par entre vetores de chave e de consulta.</p>
+
+        <p>Além disso, em vetores de dimensionalidade maior, mais termos são multiplicados e somados no produto escalar, o que costuma implicar uma variância maior. Vetores de maior magnitude contribuem com mais peso no cálculo do softmax, e muitos termos costumam receber pouca atenção. Para lidar com isso, costuma-se incluir um fator de escala, o inverso de \(\sqrt{D_x}\), para reduzir as pontuações de alinhamento. Esse escalonamento reduz o efeito dos termos de grande magnitude, de modo que os pesos de atenção resultantes ficam mais espalhados. O cálculo do alinhamento pode ser resumido pela seguinte equação:</p>
+
+        <p>$$ e_{i,j} = \frac{q_j \cdot x_i}{\sqrt{D_x}} $$</p>
+
+        <p><strong>Atenção.</strong> A matriz de atenção é obtida aplicando a função softmax, coluna a coluna, à matriz de alinhamento.</p>
+
+        <p>$$ \mathbf{a} = \text{softmax}(\mathbf{e}) $$</p>
+
+        <p>Os vetores de saída são finalmente calculados por multiplicações da matriz de atenção pelos vetores de entrada:</p>
+
+        <p>$$ y_j = \sum_{i} a_{i,j} x_i $$</p>
+
+        <h4 id="self">Self-Attention</h4>
+
+        <p>Depois de explicar a camada de atenção geral, a camada de self-attention se refere ao caso especial em que, assim como os vetores de chave e valor, os vetores de consulta \(Q\) também são expressos como uma transformação linear dos vetores de entrada: \(Q = X W_q\), em que \(W_q\) tem formato \(D_x \times D_k\). Com essa expressão dos vetores de consulta como função linear das entradas, a camada de atenção fica autocontida. Isso está ilustrado à direita na figura acima.</p>
+
+        <p><strong>Invariância a permutações.</strong> Vale notar que a camada de self-attention é invariante à ordem dos vetores de entrada: se aplicarmos uma permutação aos vetores de entrada, as saídas serão permutadas exatamente da mesma forma. Isso está ilustrado no diagrama a seguir.</p>
+
+        <figure>
+          <img src="assets/permutation.png" alt="Invariância a permutações em camadas de self-attention" style="max-width:55%">
+          <figcaption>Invariância a permutações em camadas de self-attention.</figcaption>
+        </figure>
+
+        <p><strong>Codificação posicional.</strong> Embora a camada de self-attention seja agnóstica à ordem das entradas, aplicações práticas costumam exigir alguma noção de ordem. Por exemplo, em sequências de linguagem natural, a ordem relativa das palavras costuma ter papel central para diferenciar o significado de toda a frase. Isso exige incluir um componente de codificação posicional no módulo de self-attention, para dar ao modelo a capacidade de determinar as posições das suas entradas. Esse componente deve atender a alguns requisitos:</p>
+
+        <ul>
+          <li>As codificações posicionais devem ser <em>únicas</em> para cada passo de tempo.</li>
+          <li>A <em>distância</em> entre duas codificações consecutivas quaisquer deve ser a mesma.</li>
+          <li>A função de codificação posicional deve generalizar para sequências arbitrariamente <em>longas</em>.</li>
+          <li>A função deve ser <em>determinística</em>.</li>
+        </ul>
+
+        <p>Embora existam várias funções que atendem a esses critérios, um método muito usado combina valores de seno e cosseno. Concretamente, a função de codificação tem a seguinte forma:</p>
+
+        <p>$$ p(t)
+= [\sin(w_1 \cdot t), \cos(w_1 \cdot t), \sin(w_2 \cdot t), \cos(w_2 \cdot t), \cdots, \sin(w_{d/2} \cdot t), \cos(w_{d/2} \cdot t)]
+$$</p>
+
+        <p>em que a frequência é \(w_k = \frac{1}{10000^{2k/d}}\). O que essa função codifica? O diagrama a seguir é uma explicação intuitiva do mesmo fenômeno, mas no domínio binário:</p>
+
+        <figure>
+          <img src="assets/position-binary.png" alt="Analogia binária da codificação posicional" style="max-width:50%">
+        </figure>
+
+        <p>As frequências \(w_k\) variam para representar as posições relativas das entradas, de forma semelhante aos 0s e 1s no caso binário. Na prática, o componente de codificação posicional concatena informação adicional aos vetores de entrada antes de eles passarem para o módulo de self-attention:</p>
+
+        <figure>
+          <img src="assets/position.png" alt="Codificação posicional concatenada aos vetores de entrada" style="max-width:15%">
+        </figure>
+
+        <p><strong>Comparação entre atenção geral e self-attention.</strong> A camada de atenção geral tem acesso a três conjuntos de vetores: chave, valor e consulta. Em comparação, a camada de self-attention é totalmente autocontida e parametriza os três conjuntos de vetores como funções lineares das entradas.</p>
+
+        <figure>
+          <img src="assets/comparison.png" alt="Comparação entre atenção geral e self-attention" style="max-width:60%">
+        </figure>
+
+        <h5 id="masked">Camadas de self-attention mascarada</h5>
+
+        <p>Embora a camada de codificação posicional incorpore alguma informação de posição, em aplicações mais críticas pode ser necessário dar ao modelo uma ideia mais clara da ordem relativa das entradas e impedi-lo de <em>olhar adiante</em>, para vetores futuros. Para isso, foi criada a camada de self-attention <em>mascarada</em>: ela define explicitamente a parte triangular inferior da matriz de alinhamento como infinito negativo, para ignorar os vetores futuros correspondentes enquanto o modelo processa os vetores anteriores.</p>
+
+        <figure>
+          <img src="assets/masked.png" alt="Máscara da camada de self-attention mascarada" style="max-width:30%">
+        </figure>
+
+        <h5 id="multihead">Camadas de self-attention multi-head</h5>
+
+        <p>Outra possibilidade para aumentar a expressividade do modelo é explorar a noção de atenção <em>multi-head</em>. Em vez de usar uma única camada de self-attention, a atenção multi-head usa múltiplas camadas de atenção em paralelo. Em alguns casos, para manter o custo total de computação, as dimensões de chave e valor \(D_k, D_v\) podem ser reduzidas de acordo. O benefício de usar múltiplas cabeças de atenção é permitir que o modelo foque em diferentes aspectos dos vetores de entrada.</p>
+
+        <figure>
+          <img src="assets/multihead.png" alt="Atenção multi-head" style="max-width:60%">
+        </figure>
+
+        <h4 id="summary">Resumo</h4>
+
+        <p>Para resumir esta seção:</p>
+
+        <ul>
+          <li>Motivamos e apresentamos uma nova camada popular em deep learning, a camada de <strong>atenção</strong>.</li>
+          <li>Apresentamos sua formulação geral e, em particular, estudamos os detalhes das operações de <strong>alinhamento e atenção</strong>.</li>
+          <li>Depois nos especializamos no caso da camada de <strong>self-attention</strong>.</li>
+          <li>Aprendemos que camadas de self-attention são <strong>invariantes a permutações</strong> dos vetores de entrada.</li>
+          <li>Para manter alguma informação posicional, camadas de self-attention usam uma função de <strong>codificação posicional</strong>.</li>
+          <li>Além disso, estudamos duas extensões da camada de self-attention básica: a camada de atenção <strong>mascarada</strong> e a atenção <strong>multi-head</strong>. Enquanto a primeira impede que o modelo olhe adiante, a segunda serve para aumentar sua expressividade.</li>
+        </ul>
+
+        <h4 id="resources">Recursos adicionais</h4>
+
+        <ul>
+          <li><a href="http://proceedings.mlr.press/v37/xuc15.pdf" target="_blank" rel="noopener">Show, Attend and Tell: Neural Image Caption Generation with Visual Attention</a> apresenta uma aplicação da camada de atenção à legendagem de imagens.</li>
+          <li><a href="https://arxiv.org/pdf/1803.09797.pdf" target="_blank" rel="noopener">Women also Snowboard: Overcoming Bias in Captioning Models</a> explora a camada de atenção para detectar viés de gênero em modelos de legendagem de imagens.</li>
+          <li><a href="https://arxiv.org/pdf/1409.0473.pdf" target="_blank" rel="noopener">Neural Machine Translation by Jointly Learning to Align and Translate</a> aplica atenção à tradução de linguagem natural.</li>
+          <li><a href="https://arxiv.org/pdf/1706.03762.pdf" target="_blank" rel="noopener">Attention is All You Need</a> é o artigo seminal sobre Transformers baseados em atenção, que tomou de assalto as comunidades de Visão e PLN.</li>
+        </ul>
+      </section>
+
+    </div>
+    <div class="material-group">
+      <h3>Slides</h3>
+      <ul>
+        <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_8.pdf" target="_blank" rel="noopener"><span><span class="icon">📄</span>Slides <span class="source">· Stanford CS231n</span></span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Notebooks</h3>
+      <ul>
+        <li><a href="https://colab.research.google.com/drive/1Ek5ppNWK2BhA5DZDxUEp4BsqjyCohGLj?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>LSTM with Attention</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1TV3AWY3-ipw_6aujp210blXxwOhuZSf_?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Self-Attention from Scratch</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1gR7S0278GjLZLp18psifGrO939uUYYcM?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Transformer from Scratch</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1_fEIGkORzZ04JHIhKOEgKJgZe_BW58p-?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Transformer with PyTorch and Hugging Face</span></a></li>
+        <li><a href="https://colab.research.google.com/drive/1QOtljTCrWqe-XxJTWeOZrimpgU7wl2R0?usp=drive_link" target="_blank" rel="noopener"><span><span class="icon">📓</span>Vision Transformer with Hugging Face</span></a></li>
+      </ul>
+    </div>
+
+    <div class="material-group">
+      <h3>Para explorar</h3>
+      <ul>
+        <li><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener" title="Paper original dos Transformers."><span><span class="icon">🔗</span>Attention Is All You Need</span></a></li>
+        <li><a href="https://lilianweng.github.io/posts/2018-06-24-attention/" target="_blank" rel="noopener" title="Blog de Lilian Weng sobre mecanismos de atenção."><span><span class="icon">🔗</span>Attention? Attention!</span></a></li>
+        <li><a href="http://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener" title="Explicação visual da arquitetura Transformer, por Jay Alammar."><span><span class="icon">🔗</span>The Illustrated Transformer</span></a></li>
+        <li><a href="https://arxiv.org/abs/2010.11929" target="_blank" rel="noopener" title="Paper sobre Transformers para reconhecimento de imagens."><span><span class="icon">🔗</span>ViT</span></a></li>
+        <li><a href="https://www.youtube.com/watch?v=TrdevFK_am4" target="_blank" rel="noopener" title="Vídeo sobre o paper do ViT."><span><span class="icon">🎥</span>ViT (vídeo)</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>
