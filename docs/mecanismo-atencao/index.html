@@ -1,0 +1,2126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mecanismo de Atenção</title>
+<meta name="description" content="Material didático interativo que constrói a camada de atenção passo a passo, da atenção na RNN à self-attention com várias cabeças — Aprendizado Profundo para Reconhecimento Visual, Ifes Campus Serra.">
+<style>
+  :root {
+    --ink: #121821;
+    --ink-soft: #4B5866;
+    --ink-faint: #7C8894;
+    --paper: #F2F4F3;
+    --surface: #FFFFFF;
+    --surface-2: #E9ECEC;
+    --line: #D6DBDC;
+    --line-strong: #B9C1C2;
+    --boundary: #B23A2E;
+    --vector: #2451C4;
+    --dimension: #A66A16;
+    --measure: #1E7F72;
+    --wash: rgba(36, 81, 196, 0.05);
+    --chip-pos-border: #A9C0EA;
+    --chip-neg-border: #E4B2AC;
+
+    --if-green: #3F9C42;
+    --if-red: #CC181F;
+    --brand-plate: #FFFFFF;
+
+    --font-display: "Sitka Display", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-math: "Sitka Text", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: Corbel, "Segoe UI", "Noto Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #E7ECF1;
+      --ink-soft: #A9B4C0;
+      --ink-faint: #74818F;
+      --paper: #0D131C;
+      --surface: #151D29;
+      --surface-2: #1B2431;
+      --line: #29323F;
+      --line-strong: #37424F;
+      --boundary: #E2685A;
+      --vector: #7DA1FF;
+      --dimension: #E8A33D;
+      --measure: #4FD9C4;
+      --wash: rgba(125, 161, 255, 0.1);
+      --chip-pos-border: #3E5488;
+      --chip-neg-border: #74423B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E7ECF1;
+    --ink-soft: #A9B4C0;
+    --ink-faint: #74818F;
+    --paper: #0D131C;
+    --surface: #151D29;
+    --surface-2: #1B2431;
+    --line: #29323F;
+    --line-strong: #37424F;
+    --boundary: #E2685A;
+    --vector: #7DA1FF;
+    --dimension: #E8A33D;
+    --measure: #4FD9C4;
+    --wash: rgba(125, 161, 255, 0.1);
+    --chip-pos-border: #3E5488;
+    --chip-neg-border: #74423B;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 0.85rem clamp(1.25rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-plate {
+    background: var(--brand-plate);
+    border-radius: 6px;
+    padding: 0.3rem;
+    display: flex;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+
+  .if-mark { width: 2.3rem; height: auto; display: block; }
+
+  .brand-word .if-name {
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .brand-word .if-sub {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    color: var(--ink-soft);
+  }
+
+  .course-id { text-align: right; }
+
+  .masthead .course {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .masthead .prof {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    font-family: var(--font-math);
+    margin-top: 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .course-id { text-align: left; }
+  }
+
+
+  /* ---------- Demonstração ---------- */
+  :root { --query: var(--dimension); --data: var(--vector); --output: var(--measure); --accent: var(--boundary); }
+
+  main.app {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.2rem clamp(1rem, 3vw, 2.2rem) 2.5rem;
+  }
+
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .eyebrow {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin: 0.1rem 0 0;
+    line-height: 1.15;
+  }
+
+  .nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.5rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font: 700 0.9rem var(--font-body);
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--vector); }
+  .btn:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--vector);
+    outline-offset: 2px;
+  }
+  .btn.primary { background: var(--vector); border-color: var(--vector); color: var(--paper); }
+  .btn[disabled] { opacity: 0.4; cursor: default; }
+  .counter { font: 700 0.95rem var(--font-mono); color: var(--ink-soft); min-width: 5.5em; text-align: center; }
+  select {
+    font: 600 0.9rem var(--font-body);
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    max-width: 18rem;
+  }
+
+  .step-head { margin: 0.4rem 0 1rem; max-width: 62rem; }
+  .step-meta { font: 600 0.82rem var(--font-mono); color: var(--accent); letter-spacing: 0.02em; }
+  .step-head h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    margin: 0.15rem 0 0.45rem;
+    text-wrap: balance;
+  }
+  .step-head p { margin: 0; color: var(--ink-soft); font-size: 1.02rem; max-width: 60rem; }
+  .step-head .formula { color: var(--ink); }
+  .context { margin-top: 0.7rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; font-size: 0.95rem; color: var(--ink-soft); }
+  .context .lang { font: 600 0.72rem var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+  .context .tok { font: 1rem var(--font-mono); padding: 0.08rem 0.45rem; border: 1px solid var(--line); border-radius: 4px; }
+  .context .tok.data { color: var(--data); }
+  .context .tok.query { color: var(--query); }
+  .context .tok.on { border-color: currentColor; box-shadow: inset 0 0 0 9999px var(--wash); }
+  .context .arrow { color: var(--ink-faint); }
+  .context .gloss { flex-basis: 100%; margin: 0; }
+  .w { font-style: italic; font-weight: 400; opacity: 0.85; margin-left: 0.25em; }
+
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 1.2rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.9rem 1rem 1rem;
+    min-width: 0;
+  }
+  .panel-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.4rem;
+  }
+
+  svg.plot { width: 100%; height: auto; display: block; touch-action: none; user-select: none; }
+  .plot .grid { stroke: var(--line); stroke-width: 1; }
+  .plot .axis { stroke: var(--line-strong); stroke-width: 1.5; }
+  .plot .tick { fill: var(--ink-faint); font: 12px var(--font-mono); }
+  .plot .vec { stroke-width: 3; fill: none; }
+  .plot .vec.data { stroke: var(--data); }
+  .plot .vec.query { stroke: var(--query); }
+  .plot .vec.key { stroke: var(--data); stroke-dasharray: 6 4; }
+  .plot .vec.value { stroke: var(--measure); stroke-dasharray: 2 4; }
+  .plot .vec.pos { stroke: var(--ink-faint); stroke-dasharray: 3 3; stroke-width: 2; }
+  .plot .tip.data { fill: var(--data); }
+  .plot .tip.query { fill: var(--query); }
+  .plot .tip.key { fill: var(--data); }
+  .plot .tip.value { fill: var(--measure); }
+  .plot .handle { cursor: grab; fill: transparent; }
+  .plot .handle:hover, .plot .handle:focus { stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 3 3; }
+  .plot .handle:active { cursor: grabbing; }
+  .plot .label { font: 700 15px var(--font-body); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+  .plot .label.data { fill: var(--data); }
+  .plot .label.query { fill: var(--query); }
+  .plot .label.output, .plot .label.key, .plot .label.value { fill: var(--measure); }
+  .plot .out { fill: var(--surface); stroke: var(--output); stroke-width: 3; }
+  .plot .wire { stroke: var(--accent); stroke-linecap: round; }
+  .plot .dim { opacity: 0.22; }
+  .plot .hl .vec { stroke-width: 5; }
+  .plot .hl .label { font-size: 17px; }
+
+  .mats { display: flex; flex-wrap: wrap; gap: 0.9rem 1.1rem; align-items: flex-start; }
+  .mat { min-width: 0; }
+  .mat-name { font: italic 1.05rem var(--font-math); margin-bottom: 0.2rem; }
+  .mat-name .dims { font: 0.82rem var(--font-mono); font-style: normal; color: var(--ink-faint); margin-left: 0.3em; }
+  .mat-scroll { overflow-x: auto; max-width: 100%; }
+  table.m { border-collapse: separate; border-spacing: 0; font: 1.08rem var(--font-mono); }
+  table.m td, table.m th { padding: 0.18rem 0.5rem; text-align: right; white-space: nowrap; }
+  table.m th { font: 600 0.8rem var(--font-body); color: var(--ink-faint); }
+  table.m th.row { text-align: left; padding-left: 0; }
+  table.m td { border-left: 1px solid var(--line); }
+  table.m tr td:last-child { border-right: 1px solid var(--line); }
+  table.m td.sum { border: none; color: var(--ink-faint); font-size: 0.85rem; }
+  table.m td.masked { color: var(--ink-faint); background: var(--surface-2); }
+  table.m tr.hl td:not(.sum), table.m tr.hl th { box-shadow: inset 0 0 0 9999px var(--wash); color: var(--ink); }
+  table.m tr.hl th.row { color: var(--ink); }
+  table.m td.cell-hl { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.m input {
+    width: 4.2em;
+    font: inherit;
+    text-align: right;
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    padding: 0.05rem 0.25rem;
+  }
+  .role-data { color: var(--data); }
+  .role-query { color: var(--query); }
+  .role-output, .role-key, .role-value { color: var(--measure); }
+  .op { align-self: center; font: 1.3rem var(--font-math); color: var(--ink-faint); padding-top: 1.2rem; }
+
+  .is-new {
+    position: relative;
+    border-radius: 8px;
+    box-shadow: 0 0 0 3px var(--accent);
+    animation: arrive 0.45s ease-out;
+  }
+  .mat.is-new { padding: 0.3rem 0.55rem 0.45rem; }
+  .controls input[type="number"] {
+    font: 0.95rem var(--font-mono);
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    padding: 0.2rem 0.4rem;
+  }
+  .is-new-tag {
+    display: inline-block;
+    font: 700 0.68rem var(--font-body);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-left: 0.4em;
+    vertical-align: middle;
+  }
+  @keyframes arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; margin-top: 0.7rem; font-size: 0.92rem; }
+  .controls label { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink-soft); }
+  .controls input[type="range"] { width: 9rem; accent-color: var(--vector); }
+  .controls output { font: 0.9rem var(--font-mono); color: var(--ink); min-width: 3em; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.82rem; color: var(--ink-soft); margin-top: 0.4rem; }
+  .legend i { display: inline-block; width: 1.4em; height: 3px; vertical-align: middle; margin-right: 0.35em; border-radius: 2px; }
+
+  .note { font-size: 0.9rem; color: var(--ink-soft); margin-top: 0.7rem; }
+  .note strong { color: var(--ink); }
+  .stat { font: 0.95rem var(--font-mono); }
+  .stat table { border-collapse: collapse; }
+  .stat td, .stat th { padding: 0.2rem 0.7rem; text-align: right; border-bottom: 1px solid var(--line); }
+  .stat th { font: 600 0.8rem var(--font-body); color: var(--ink-faint); }
+  .big-number { font: 700 1.8rem var(--font-mono); color: var(--accent); }
+
+  .hand {
+    margin-top: 1.2rem;
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+  }
+  .hand-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .hand h3 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; }
+  .hand ol { margin: 0.5rem 0 0; padding-left: 1.3rem; }
+  .hand li { margin: 0.3rem 0; }
+  .hand .ans { font-family: var(--font-mono); color: var(--dimension); }
+
+  .reveal-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex: none;
+  }
+  .reveal-toggle[aria-pressed="true"] {
+    background: var(--wash);
+    border-color: var(--dimension);
+    color: var(--dimension);
+  }
+  .reveal-icon { font-size: 1rem; line-height: 1; }
+
+  .answer-mask {
+    display: inline-block;
+    min-width: 1.4em;
+    text-align: center;
+    padding: 0 0.3em;
+    border-bottom: 2px dashed var(--line-strong);
+    color: var(--ink-faint);
+    font-style: normal;
+  }
+  .answer-mask.block { min-width: 4.5em; padding: 0.1em 0.5em; }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1.4rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  details.refs { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-soft); }
+  details.refs summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+  details.refs a { color: var(--vector); }
+  .kbd { font: 0.78rem var(--font-mono); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.3em; }
+
+  /* ---------- etapas, notas e palavras (spec 004) ---------- */
+  .stage-counter { font: 600 0.82rem var(--font-mono); color: var(--ink-faint); white-space: nowrap; }
+  .stage-caption {
+    margin-top: 0.7rem;
+    padding: 0.45rem 0.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    color: var(--ink);
+    font-size: 1.02rem;
+    max-width: 60rem;
+  }
+  .stage-caption:empty { display: none; }
+  details.more { margin-top: 0.7rem; max-width: 60rem; font-size: 0.95rem; color: var(--ink-soft); }
+  details.more summary { cursor: pointer; font-weight: 700; color: var(--ink); width: fit-content; border-radius: 4px; }
+  details.more summary:focus-visible { outline: 3px solid var(--vector); outline-offset: 2px; }
+  details.more > div { margin-top: 0.4rem; padding: 0.1rem 0 0.1rem 0.9rem; border-left: 2px solid var(--line-strong); }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 999px; overflow: hidden; }
+  .seg button { border: 0; background: var(--surface); color: var(--ink-soft); font: 700 0.85rem var(--font-body); padding: 0.4rem 0.85rem; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button[aria-pressed="true"] { background: var(--vector); color: var(--paper); }
+  .seg button:focus-visible { outline: 3px solid var(--vector); outline-offset: -3px; }
+  .plot .cmp { stroke: var(--ink-faint); stroke-dasharray: 4 4; stroke-width: 1.5; }
+  .plot .label.small { font-size: 12px; }
+  .plot .tword { font: 600 17px var(--font-mono); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; dominant-baseline: middle; }
+  .plot .tword.small { font-size: 14px; }
+  .plot .tword.query, .plot .tword.gen { fill: var(--query); }
+  .plot .tword.data { fill: var(--data); }
+  .plot g.hl .tword, .plot g.act .tword { text-decoration: underline; text-decoration-thickness: 2px; }
+  .plot g[data-col] { cursor: pointer; }
+  .plot g[data-col]:focus { outline: none; }
+  .plot g[data-col]:focus-visible .tword { text-decoration: underline; }
+  .plot .tape-head { font: 700 14px var(--font-body); fill: var(--ink); }
+  .plot .tape-head.query, .plot .tape-head.gen { fill: var(--query); }
+  .plot .tape-head.data { fill: var(--data); }
+  .plot .tape-sub { font: 12px var(--font-body); fill: var(--ink-faint); }
+  .plot .arc { fill: none; stroke: var(--accent); stroke-linecap: round; }
+  .plot .arc.self { stroke: var(--query); }
+  .plot .wval { font: 12px var(--font-mono); fill: var(--ink-soft); dominant-baseline: middle; }
+  table.m td.pending { color: var(--ink-faint); }
+  .mblock { flex-basis: 100%; min-width: 0; max-width: 100%; display: flex; flex-direction: column; gap: 0.45rem; }
+  .mblock + .mblock { border-top: 1px solid var(--line); padding-top: 0.7rem; }
+  .mblock-title { font: 700 0.75rem var(--font-body); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint); }
+
+  /* ---------- exemplos na linguagem (research R15) ---------- */
+  .note-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; }
+  .note-row details.more { flex: 1 1 22rem; }
+  .ex-btn { margin-top: 0.7rem; }
+  .ex-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 35%, transparent); z-index: 40; }
+  .ex-panel {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 41;
+    width: min(600px, 100%);
+    background: var(--paper); color: var(--ink);
+    border-left: 1px solid var(--line-strong);
+    box-shadow: -12px 0 32px color-mix(in srgb, var(--ink) 18%, transparent);
+    display: flex; flex-direction: column;
+  }
+  .ex-panel[hidden], .ex-backdrop[hidden] { display: none; }
+  .ex-head { padding: 1rem 1.1rem 0.6rem; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.5rem; }
+  .ex-head h2 { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 1.4rem; }
+  .ex-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; }
+  .ex-count { font: 600 0.82rem var(--font-mono); color: var(--ink-faint); margin-right: auto; }
+  .ex-disclaimer { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
+  .ex-body { overflow-y: auto; padding: 0.4rem 1.1rem 1.4rem; }
+  .ex-group { font: 700 0.78rem var(--font-body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 1.1rem 0 0.5rem; }
+  .ex-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem 0.85rem 0.8rem; margin-bottom: 0.7rem; }
+  .ex-card.open { border-color: var(--line-strong); }
+  .ex-q { margin: 0 0 0.3rem; font-size: 0.95rem; color: var(--ink-soft); }
+  .ex-sent { position: relative; padding-top: 2.2rem; }
+  .ex-sent.two { padding-top: 2.2rem; display: flex; flex-direction: column; gap: 2.4rem; }
+  .ex-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.4rem; position: relative; z-index: 1; }
+  .ex-lang { font: 600 0.7rem var(--font-body); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); min-width: 5.6rem; }
+  .ex-tok { font: 1rem var(--font-mono); padding: 0.1rem 0.4rem; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); }
+  .ex-tok.focus { border-color: var(--query); color: var(--query); font-weight: 700; box-shadow: 0 0 0 1px var(--query); }
+  .ex-tok.clue { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .ex-tok.future { opacity: 0.35; border-style: dashed; }
+  .ex-arrows { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+  .ex-arrow { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; }
+  .ex-tr { margin: 0.6rem 0 0; font: 1rem var(--font-mono); }
+  .ex-tr b { color: var(--accent); }
+  .ex-why { margin: 0.35rem 0 0.2rem; font-size: 0.95rem; color: var(--ink-soft); }
+  .ex-toggle { margin-top: 0.5rem; }
+  @media (max-width: 640px) { .ex-lang { min-width: 100%; } }
+
+  /* ---------- modo aula: tela cheia (research R10) ---------- */
+  html.lecture { font-size: 115%; }
+  html.lecture .masthead, html.lecture #hand, html.lecture .foot, html.lecture details.refs { display: none !important; }
+  html.lecture main.app { max-width: none; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-plate">
+      <svg class="if-mark" viewBox="0 0 114 154" role="img" aria-label="Instituto Federal do Espírito Santo">
+        <circle cx="17" cy="17" r="17" fill="#CC181F"></circle>
+        <rect x="40" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="0" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="40" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="80" y="80" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="0" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+        <rect x="40" y="120" width="34" height="34" rx="7" fill="#3F9C42"></rect>
+      </svg>
+    </div>
+    <div class="brand-word">
+      <div class="if-name">INSTITUTO FEDERAL</div>
+      <div class="if-sub">Espírito Santo</div>
+      <div class="if-sub">Campus Serra</div>
+    </div>
+  </div>
+  <div class="course-id">
+    <div class="course">Aprendizado Profundo para Reconhecimento Visual</div>
+    <div class="prof">Prof. Thiago M. Paixão</div>
+  </div>
+</header>
+
+<main class="app">
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Atenção e Transformers · Aula 8</div>
+      <h1>Mecanismo de atenção</h1>
+    </div>
+    <nav class="nav" aria-label="Passos">
+      <button class="btn" id="prevBtn" type="button" aria-label="Passo anterior">← Anterior</button>
+      <span class="counter" id="counter" aria-live="polite">1 de 14</span>
+      <span class="stage-counter" id="stageCounter" hidden></span>
+      <button class="btn primary" id="nextBtn" type="button" aria-label="Próximo passo">Próximo →</button>
+      <label class="sr-only" for="stepSelect" style="position:absolute;left:-9999px">Ir para o passo</label>
+      <select id="stepSelect" aria-label="Ir para o passo"></select>
+      <button class="btn" id="fullBtn" type="button" title="Tela cheia, modo aula (F)" aria-label="Tela cheia, modo aula">⛶</button>
+    </nav>
+  </div>
+
+  <section class="step-head">
+    <div class="step-meta" id="stepMeta"></div>
+    <h2 id="stepTitle"></h2>
+    <p id="stepText"></p>
+    <div class="context" id="context"></div>
+    <div class="stage-caption" id="stageCaption" aria-live="polite"></div>
+    <div id="noteBox"></div>
+  </section>
+
+  <div class="stage">
+    <div class="panel" id="geoPanel">
+      <div class="panel-title">Vista geométrica</div>
+      <svg class="plot" id="plot" viewBox="0 0 520 520" role="img" aria-label="Plano com os vetores do passo atual"></svg>
+      <div class="legend" id="legend"></div>
+      <div class="controls" id="geoControls"></div>
+    </div>
+    <div class="panel" id="matPanel">
+      <div class="panel-title">Vista de matrizes</div>
+      <div class="mats" id="mats"></div>
+      <div id="extra"></div>
+    </div>
+  </div>
+
+  <section class="hand" id="hand" hidden>
+    <div class="hand-head">
+      <h3>Calculando à mão</h3>
+      <button type="button" class="reveal-toggle" id="revealBtn" aria-pressed="false"><span class="reveal-icon">👁</span><span id="revealLabel">Mostrar resultados</span></button>
+    </div>
+    <p class="note" style="margin-top:0.3rem">Com os valores atuais, resolva no papel e depois confira.</p>
+    <ol id="handList"></ol>
+  </section>
+
+  <div class="foot">
+    <button class="btn" id="resetBtn" type="button" title="Restaurar exemplo (R)">↺ Restaurar exemplo</button>
+    <span class="note" style="margin:0">Teclado: <span class="kbd">←</span> <span class="kbd">→</span> avançar e voltar · <span class="kbd">Shift</span>+<span class="kbd">←</span> <span class="kbd">→</span> passo · <span class="kbd">P</span> reproduzir · <span class="kbd">L</span> exemplos · <span class="kbd">F</span> tela cheia · <span class="kbd">R</span> restaurar</span>
+  </div>
+
+  <details class="refs">
+    <summary>Referências</summary>
+    <ul>
+      <li><a href="https://cs231n.stanford.edu/slides/2026/lecture_8.pdf" target="_blank" rel="noopener">CS231n, aula 8: Attention and Transformers</a> — os números de slide desta página referem-se a este PDF.</li>
+      <li><a href="../produto-escalar/">Produto escalar</a> — a similaridade da atenção é um produto escalar.</li>
+      <li><a href="https://colab.research.google.com/drive/1TV3AWY3-ipw_6aujp210blXxwOhuZSf_?usp=drive_link" target="_blank" rel="noopener">Notebook Self-Attention from Scratch</a> — os mesmos passos em código PyTorch.</li>
+      <li>Inspiração: J. Alammar, <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a>; Polo Club (Georgia Tech), <a href="https://poloclub.github.io/transformer-explainer/" target="_blank" rel="noopener">Transformer Explainer</a>; 3Blue1Brown, <a href="https://www.youtube.com/watch?v=eMlx5fFNoYc" target="_blank" rel="noopener">Attention in transformers, visually explained</a>.</li>
+    </ul>
+  </details>
+</main>
+
+<div class="ex-backdrop" id="exBackdrop" hidden></div>
+<aside class="ex-panel" id="examples" role="dialog" aria-modal="true" aria-labelledby="exTitle" hidden>
+  <div class="ex-head">
+    <h2 id="exTitle">Exemplos na linguagem</h2>
+    <p class="ex-disclaimer">As setas mostram de qual informação a palavra precisa para ser traduzida; não são pesos de um modelo treinado.</p>
+    <div class="ex-tools">
+      <span class="ex-count" id="exCount"></span>
+      <button type="button" class="btn" id="exAll">Revelar todos</button>
+      <button type="button" class="btn" id="exClose" title="Fechar (Esc)">Fechar</button>
+    </div>
+  </div>
+  <div class="ex-body" id="exCards"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs><marker id="exHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"></path></marker></defs>
+  </svg>
+</aside>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= Exemplo (data-model.md) ================= */
+  var ORIGINAL = {
+    data: [[1.0, 0.2], [0.2, 1.0], [-0.8, 0.3], [0.6, -0.9]],
+    // vediamo ("nós vemos") fica entre we e see; il perto de the; cielo perto de sky
+    queries: [[1.8, 1.2], [-1.0, 0.4], [1.0, -1.0]],
+    s0: [0.5, 0.9],
+    WK: [[0.8, -0.4], [0.2, 1.0]],
+    WV: [[1.0, 0.0], [0.0, 0.5]],
+    WQ: [[1.0, 0.2], [-0.2, 1.0]],
+    // entradas do decoder no passo 11: ⟨início⟩, vediamo, il
+    Z: [[0.7, 0.2], [-0.7, 0.2], [-0.4, -0.6]],
+    // frase do pronome no passo 7
+    pron: [[0.2, 0.1], [-1.5, 1.5], [-0.3, 0.2], [0.2, -0.7], [0.1, 0.2], [-0.6, -1.0], [-0.2, 0.3], [-0.5, 1.0], [0.3, -0.2], [0.6, 0.6]]
+  };
+  var DATA_LABELS = ["we", "see", "the", "sky"];
+  var QUERY_LABELS = ["vediamo", "il", "cielo"];
+  var PRON_LABELS = ["o", "animal", "não", "atravessou", "a", "rua", "porque", "ele", "estava", "cansado"];
+  var PRON_ELE = 7;
+  var DEC_IN = ["⟨início⟩", "vediamo", "il"];
+  var SUB = "₁₂₃₄₅₆₇₈₉";
+  var QUERY_NAMES = QUERY_LABELS.map(function (w, i) { return "q" + SUB[i] + " <span class=\"w\">" + w + "</span>"; });
+  var QUERY_PLOT = QUERY_LABELS.map(function (w, i) { return "q" + SUB[i] + " " + w; });
+  var HEAD2 = { WQ: [[0.0, 1.0], [1.0, 0.0]], WK: [[1.0, 0.0], [0.0, -1.0]], WV: [[0.5, 0.0], [0.0, 1.0]] };
+  var WO = [[0.5, 0.0], [0.0, 0.5], [0.5, 0.0], [0.0, 0.5]];
+  var PERM = [2, 0, 3, 1];
+  var LIMIT = 3;
+  var TOTAL = 14;
+  var PLAY_MS = 1200;
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  var ex = clone(ORIGINAL);
+  var opt = defaultOptions();
+  var state = { step: 0, stage: 1, highlight: null, revealed: false, playing: false };
+  var playTimer = null;
+
+  function defaultOptions() {
+    return { stretch: 1, scale: true, D: 64, permute: false, positions: true, mask: true, head: 0, geo: "X",
+             N: 4, Dm: 2, H: 2, memN: 100000, memH: 64, bytes: 2, example: "traducao", view: "fita" };
+  }
+
+  /* ================= Álgebra ================= */
+  function matmul(a, b) {
+    return a.map(function (row) {
+      return b[0].map(function (_, j) {
+        var s = 0;
+        for (var k = 0; k < b.length; k++) s += row[k] * b[k][j];
+        return s;
+      });
+    });
+  }
+  function T(a) { return a[0].map(function (_, j) { return a.map(function (r) { return r[j]; }); }); }
+  function scaleM(a, s) { return a.map(function (r) { return r.map(function (x) { return x * s; }); }); }
+  function addM(a, b) { return a.map(function (r, i) { return r.map(function (x, j) { return x + b[i][j]; }); }); }
+  function softmaxRows(e, mask) {
+    return e.map(function (row, i) {
+      var top = -Infinity;
+      row.forEach(function (x, j) { if (!(mask && mask[i][j]) && x > top) top = x; });
+      var ex2 = row.map(function (x, j) { return mask && mask[i][j] ? 0 : Math.exp(x - top); });
+      var tot = ex2.reduce(function (s, x) { return s + x; }, 0);
+      return ex2.map(function (x) { return x / tot; });
+    });
+  }
+  function causal(n) {
+    var m = [];
+    for (var i = 0; i < n; i++) { m.push([]); for (var j = 0; j < n; j++) m[i].push(j > i); }
+    return m;
+  }
+  function positions(n) { var p = []; for (var t = 0; t < n; t++) p.push([Math.sin(t), Math.cos(t)]); return p; }
+  function attention(q, k, v, mask) {
+    var e = scaleM(matmul(q, T(k)), 1 / Math.sqrt(q[0].length));
+    if (mask) e = e.map(function (r, i) { return r.map(function (x, j) { return mask[i][j] ? -Infinity : x; }); });
+    var a = softmaxRows(e, mask);
+    return { E: e, A: a, Y: matmul(a, v) };
+  }
+  function selfAttention(x, wq, wk, wv, mask) {
+    var q = matmul(x, wq), k = matmul(x, wk), v = matmul(x, wv);
+    var r = attention(q, k, v, mask);
+    r.Q = q; r.K = k; r.V = v;
+    return r;
+  }
+  function topWords(row, labels) {
+    // as palavras com peso perto do maior (diferença de até 0,05), da maior para a menor
+    var m = Math.max.apply(null, row);
+    return row.map(function (w, j) { return [w, j]; }).filter(function (p) { return p[0] >= m - 0.05; })
+      .sort(function (a, b) { return b[0] - a[0]; })
+      .map(function (p) { return "<i>" + labels[p[1]] + "</i> (" + fmt(p[0]) + ")"; }).join(" e ");
+  }
+  function argmax(row) { var b = 0; row.forEach(function (x, j) { if (x > row[b]) b = j; }); return b; }
+  function fmt(x) {
+    if (x === -Infinity) return "−∞";
+    var s = (Math.abs(x) < 0.005 ? 0 : x).toFixed(2);
+    return s.replace("-", "−");
+  }
+  function v2(v) { return "(" + fmt(v[0]) + "; " + fmt(v[1]) + ")"; }
+  function clampV(v) { return v.map(function (c) { return Math.max(-LIMIT, Math.min(LIMIT, c)); }); }
+  function range(n) { var r = []; for (var i = 0; i < n; i++) r.push(i); return r; }
+
+  /* ================= Passos (contracts/steps.md) ================= */
+  var STEPS = [
+    null,
+    { title: "Um operador escondido na atenção da RNN", slides: "28-29", isNew: ["h", "e", "a", "c"],
+      text: "Na tradução com RNN, o estado do decoder <b class=\"role-query\">s₀</b> compara-se com cada estado do encoder <b class=\"role-data\">hᵢ</b>, as comparações viram pesos <i>a</i> que somam 1, e o vetor de contexto <b class=\"role-output\">c</b> é a mistura dos <i>hᵢ</i> com esses pesos. Aqui, a comparação <i>f<sub>att</sub></i> é uma pequena rede aprendida. Os próximos passos transformam esse operador numa camada independente da RNN: <b>consultas</b> (aqui, <i>s₀</i>) que olham para <b>dados</b> (aqui, os <i>hᵢ</i>)." },
+    { title: "Uma consulta, vários dados", slides: "30-35", isNew: ["e", "a", "y"],
+      text: "A comparação passa a ser o produto escalar <span class=\"formula\"><i>eᵢ = q · Xᵢ</i></span>: quanto mais alinhados a consulta e o dado, maior a similaridade. O softmax transforma as similaridades em pesos positivos que somam 1, e a saída <b class=\"role-output\">y = Σ aᵢXᵢ</b> é a média dos dados ponderada por esses pesos. Gire a consulta <b class=\"role-query\">q</b> na direção de um dado e o peso dele cresce; o tamanho dos vetores também conta, como na demonstração de produto escalar." },
+    { title: "Dividir por √D", slides: "36-38", isNew: ["e", "sat"],
+      text: "Vetores mais longos, ou de dimensão maior, produzem produtos escalares maiores, e o softmax satura: quase todo o peso vai para um só vetor, e o gradiente que treina a rede some. Dividir por <span class=\"formula\"><i>√D</i></span> mantém as similaridades numa faixa estável. Estique os vetores e compare com e sem a escala." },
+    { title: "Várias consultas de uma vez", slides: "39", isNew: ["Q", "E", "A", "Y"],
+      text: "Empilhamos as consultas numa matriz <i>Q</i> e fazemos o passo 2 para todas numa só multiplicação: <span class=\"formula\"><i>E = QXᵀ/√D</i>, <i>A = softmax(E)</i>, <i>Y = AX</i></span>. Cada linha de <i>A</i> é a distribuição de pesos de uma consulta e soma 1. Passe o mouse sobre uma consulta.",
+      note: { q: "A ordem das consultas importa?",
+              a: "Não. Cada linha de <i>A</i> e de <i>Y</i> depende só da sua consulta e de <i>X</i>: trocar a ordem das consultas só troca a ordem das linhas. Os índices q₁, q₂, q₃ só numeram as linhas. Empilhar é uma forma de fazer várias contas do passo 2 numa só multiplicação, e não diz nada sobre a ordem em que as palavras são geradas (ver o passo 11)." } },
+    { title: "Chaves e valores", slides: "40-45", isNew: ["WK", "WV", "K", "V"],
+      text: "Os dados tinham dois papéis: ser comparados com a consulta e ser misturados na saída. Agora cada papel ganha uma versão aprendida: as <b>chaves</b> <span class=\"formula\"><i>K = XW<sub>K</sub></i></span> são comparadas, e os <b>valores</b> <span class=\"formula\"><i>V = XW<sub>V</sub></i></span> são misturados: <span class=\"formula\"><i>Y = AV</i></span>.",
+      note: { q: "De onde vêm W<sub>K</sub> e W<sub>V</sub>?",
+              a: "São aprendidas no treino, com o resto da rede: o erro da tarefa volta por backpropagation e ajusta W<sub>Q</sub>, W<sub>K</sub> e W<sub>V</sub>. O que se aprende não são os pesos de atenção, recalculados para cada frase, e sim a regra que os gera: o que conta como parecido e o que cada palavra passa adiante. Nada obriga a atenção a ser interpretável; ela fica como for mais útil para a tarefa. Nesta página, os valores foram escolhidos à mão." } },
+    { title: "Cross-attention: duas sequências", slides: "46", isNew: ["tape"],
+      text: "Na <b>cross-attention</b>, as consultas vêm de uma sequência e as chaves e os valores de outra: aqui, as consultas vêm da tradução em italiano, e as chaves e os valores, da frase em inglês. As duas sequências podem ter tamanhos diferentes (3 consultas, 4 dados), e há uma saída para cada consulta. É assim que o decoder de um tradutor consulta a frase de origem.",
+      note: { q: "E na hora de gerar a tradução?",
+              a: "Na geração, o decoder produz uma palavra por vez, então a cross-attention recebe uma consulta por vez. As chaves e os valores, que vêm da frase de origem, ficam fixos e são calculados uma vez. Ter as três consultas juntas, como aqui, acontece no treino, quando a tradução inteira é conhecida. O passo 11 mostra as duas situações." } },
+    { title: "Self-attention", slides: "47-51", isNew: ["WQ", "Qs", "A"],
+      text: "Na <b>self-attention</b> não há consultas de fora: cada vetor gera a sua própria consulta, com <span class=\"formula\"><i>Q = XW<sub>Q</sub></i></span>, além da chave e do valor, e <i>A</i> fica <i>N × N</i>. Cada saída é uma mistura de todos os vetores da sequência, inclusive de si mesmo. Compare com o passo 6: lá, as consultas vinham de outra sequência; aqui, cada palavra consulta a própria frase.",
+      note: { q: "O que acontece com cada palavra?",
+              a: "Cada palavra é reescrita com informação das outras palavras da frase: o vetor deixa de descrever a palavra isolada e passa a descrevê-la naquele contexto. Sem isso, a cross-attention receberia palavras isoladas: para traduzir <i>the</i> como <i>il</i> ou <i>la</i>, ela teria de olhar para <i>the</i> e <i>sky</i> ao mesmo tempo e torcer para a média funcionar. No Transformer completo, a saída da atenção é somada à entrada (conexão residual) e passa por uma pequena rede aplicada a cada palavra (MLP); empilhando camadas, a representação é refinada várias vezes. No ViT, o mesmo acontece com pedaços da imagem. Veja outros casos em “Exemplos na linguagem”." } },
+    { title: "A ordem não importa (ainda)", slides: "52-58", isNew: ["perm"],
+      text: "Permute os vetores de entrada: consultas, chaves, valores, pesos e saídas continuam os mesmos, só que em outra ordem. A self-attention é <b>equivariante a permutações</b>, <span class=\"formula\"><i>F(σ(X)) = σ(F(X))</i></span>: ela trata a entrada como um conjunto, sem saber a posição de cada palavra." },
+    { title: "Codificação posicional", slides: "59-60", isNew: ["P"],
+      text: "Para a ordem importar, somamos a cada vetor um vetor que depende só da posição <i>t</i>: <span class=\"formula\"><i>Pₜ = (sin t, cos t)</i></span>. Agora permutar muda os <b>valores</b> das saídas, não só a ordem. O slide 60 mostra uma alternativa moderna, o RoPE, que gira consultas e chaves conforme a posição." },
+    { title: "Máscara: sem olhar para o futuro", slides: "61-62", isNew: ["E", "A"],
+      text: "Num modelo de linguagem, cada palavra só pode ver as anteriores. Trocamos por <b>−∞</b> as similaridades com posições futuras, e o softmax dá peso exatamente 0 a elas. Arraste <b class=\"role-data\">sky</b>: só a última saída muda.",
+      note: { q: "Onde fica esta máscara num Transformer?",
+              a: "No encoder não há máscara: a frase de origem inteira já é conhecida, e tudo é calculado em paralelo. No decoder, a máscara impede cada posição de ver as seguintes. Por isso, no treino, todas as posições são calculadas juntas, com o mesmo resultado da geração palavra por palavra. Na geração, o decoder é sequencial. O passo 11 mostra isso." } },
+    { title: "Gerando a tradução", slides: "complemento", isNew: [],
+      text: "Na geração, o decoder produz uma palavra por vez. A cada palavra, uma única consulta olha para as palavras já geradas (self-attention com máscara) e para a frase de origem (cross-attention). No treino, a frase inteira é conhecida e tudo é calculado de uma vez, com os mesmos números.",
+      note: { q: "Como o encoder aprende, se é calculado uma vez só?",
+              a: "“Uma vez só” vale para cada frase, na hora de gerar; os pesos do encoder são ajustados ao longo de milhões de frases no treino. O erro da tradução volta pelo decoder e chega ao encoder pela cross-attention, a única ponte entre os dois. Cada palavra de origem recebe mais sinal quanto mais o decoder prestou atenção nela. Assim o encoder aprende representações que ajudam a traduzir, sem saber que está traduzindo." } },
+    { title: "Várias cabeças", slides: "63-67", isNew: ["heads", "WO"],
+      text: "Rodamos <i>H</i> cópias da self-attention em paralelo, cada uma com seus próprios pesos: cada <b>cabeça</b> pode prestar atenção a relações diferentes. As saídas das cabeças são empilhadas e misturadas por <span class=\"formula\"><i>W<sub>O</sub></i></span>, voltando à dimensão <i>D</i>. Para simplificar, sem máscara e sem posição." },
+    { title: "Quatro multiplicações de matrizes", slides: "68-77", isNew: ["shapes"],
+      text: "Na prática, todas as cabeças são calculadas juntas, com multiplicações de matrizes em lote, e a camada inteira se reduz a quatro produtos. O resultado é o mesmo do passo anterior. Mude <i>N</i>, <i>D</i> e <i>H</i> para ver a forma de cada produto." },
+    { title: "Quanto de memória?", slides: "78-79", isNew: ["mem"],
+      text: "A matriz de pesos <i>A</i> tem <i>H × N × N</i> números: a memória cresce com o <b>quadrado</b> de <i>N</i>. Com <i>N</i> = 100.000 e <i>H</i> = 64, em 2 bytes por número, são cerca de 1.192 GiB, o “1.192 TB” do slide 78. O algoritmo Flash Attention (slide 79) calcula as multiplicações 2 e 3 juntas, sem guardar <i>A</i> inteira." }
+  ];
+
+  /* ================= Etapas (research R2, R13) ================= */
+  function isPron() { return state.step === 7 && opt.example === "pronome"; }
+  function stageCount(n) {
+    if (n === 2) return 7;
+    if (n === 4) return 5;
+    if (n === 5) return 3;
+    if (n === 7) return opt.example === "pronome" ? 1 : 6;
+    if (n === 10) return opt.mask ? 4 : 1;
+    if (n === 11) return 5;
+    return 1;
+  }
+  function stageNew(n) {
+    var s = state.stage;
+    if (n === 2) return s === 1 ? ["q"] : s <= 5 ? ["e"] : s === 6 ? ["a"] : ["y"];
+    if (n === 4) return s === 1 ? ["Q"] : ["E", "A", "Y"];
+    if (n === 5) return [["WK", "K"], ["WV", "V"], ["E", "A", "Y"]][s - 1];
+    if (n === 7 && opt.example === "pronome") return ["A"];
+    if (n === 7) return s === 1 ? ["WQ", "Qs", "K", "V"] : ["E", "A", "Y"];
+    if (n === 10 && opt.mask) return [["E"], ["E"], ["A"], ["Y"]][s - 1];
+    if (n === 11) return s === 1 ? ["Kenc", "Venc"] : s <= 4 ? ["cache", "aself", "across"] : ["trainSelf", "trainCross"];
+    return STEPS[n].isNew || [];
+  }
+  function stageCaption(n, R) {
+    var s = state.stage, j, k;
+    if (n === 2) {
+      if (s === 1) return "";
+      if (s <= 5) { j = s - 2; return "e" + SUB[j] + " = q · X" + SUB[j] + " = " + v2(R.q[0]) + " · " + v2(R.x[j]) + " = <b>" + fmt(R.E[0][j]) + "</b>"; }
+      if (s === 6) { j = argmax(R.A[0]); return "a = softmax(e): cada exp(eᵢ) dividida pela soma das quatro. Os pesos somam 1, e o maior é o de <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[0][j]) + ")"; }
+      return "y = Σ aᵢXᵢ = <b>" + v2(R.Y[0]) + "</b>: a média dos dados ponderada pelos pesos";
+    }
+    if (n === 4) {
+      if (s === 1) return "";
+      if (s <= 4) { k = s - 2; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": a conta do passo 2 para q" + SUB[k] + " (<i>" + QUERY_LABELS[k] + "</i>). Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + "), e y" + SUB[k] + " = " + v2(R.Y[k]); }
+      return "Y = AX: as três linhas numa única multiplicação de matrizes, com os mesmos números das etapas anteriores";
+    }
+    if (n === 5) return [
+      "As chaves são os dados transformados por W<sub>K</sub>: são elas que a consulta compara. Por exemplo, k<sub>sky</sub> = X₄W<sub>K</sub> = " + v2(R.K[3]),
+      "Os valores são os dados transformados por W<sub>V</sub>: são eles que vão para a saída. Por exemplo, v<sub>sky</sub> = X₄W<sub>V</sub> = " + v2(R.V[3]),
+      "A mesma conta do passo 4, com <i>K</i> na comparação (E = QKᵀ/√D) e <i>V</i> na mistura (Y = AV)"][s - 1];
+    if (n === 7 && opt.example === "pronome") {
+      j = argmax(R.A[PRON_ELE]);
+      return "<i>ele</i> dá o maior peso a <i>" + PRON_LABELS[j] + "</i> (" + fmt(R.A[PRON_ELE][j]) + "), e <i>rua</i> recebe " + fmt(R.A[PRON_ELE][5]) + ". A saída de <i>ele</i> passa a carregar informação de <i>" + PRON_LABELS[j] + "</i>";
+    }
+    if (n === 7) {
+      if (s === 1) return "";
+      if (s <= 5) { k = s - 2; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": <i>" + DATA_LABELS[k] + "</i> compara a sua consulta com as chaves de todas as palavras da frase. Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + ")"; }
+      return "Cada saída é a sua palavra reescrita com o contexto da frase";
+    }
+    if (n === 10 && opt.mask) return [
+      "Sem máscara, cada palavra se compara com todas, inclusive as seguintes",
+      "As posições futuras (acima da diagonal) recebem −∞",
+      "exp(−∞) = 0: as palavras futuras recebem peso exatamente 0, e cada linha continua somando 1",
+      "Cada saída mistura só a própria palavra e as anteriores"][s - 1];
+    if (n === 11) {
+      if (s === 1) return "O encoder lê a frase inteira uma vez: K<sub>enc</sub> e V<sub>enc</sub> não mudam mais";
+      if (s <= 4) {
+        k = s - 2;
+        var g = generation(k + 1);
+        return "Gerando <i>" + QUERY_LABELS[k] + "</i> (entrada <i>" + DEC_IN[k] + "</i>): uma consulta só. O cache do decoder tem " + (k + 1) + (k ? " linhas" : " linha") +
+          (k ? ", e a self-attention olha as " + (k + 1) + " posições até aqui" : ", e a self-attention só vê a própria posição (peso 1,00)") +
+          "; a cross-attention dá o maior peso a " + topWords(g.crossA[k], DATA_LABELS) + ". O encoder não foi recalculado";
+      }
+      return "Treino: a tradução inteira é conhecida, e as três posições são calculadas numa só multiplicação, com máscara. Cada linha é igual à da etapa correspondente";
+    }
+    return "";
+  }
+
+  /* ================= Contas de cada passo ================= */
+  function generation(upto) {
+    var X = ex.data, Z = ex.Z.slice(0, upto);
+    var Kenc = matmul(X, ex.WK), Venc = matmul(X, ex.WV);
+    var mask = causal(Z.length);
+    var sa = selfAttention(Z, ex.WQ, ex.WK, ex.WV, mask);
+    var U = addM(Z, sa.Y);
+    var Qc = matmul(U, ex.WQ);
+    var ca = attention(Qc, Kenc, Venc);
+    return { Kenc: Kenc, Venc: Venc, Z: Z, Kdec: sa.K, Vdec: sa.V, selfE: sa.E, selfA: sa.A, selfY: sa.Y,
+             U: U, Qc: Qc, crossE: ca.E, crossA: ca.A, C: ca.Y, mask: mask };
+  }
+
+  function compute(n) {
+    var X = ex.data, Q = ex.queries, ident = [0, 1, 2, 3];
+    var R = { order: ident };
+    if (n === 1) {
+      var e1 = [X.map(function (h) { return Math.tanh(ex.s0[0] + h[0]) + Math.tanh(ex.s0[1] + h[1]); })];
+      R.E = e1; R.A = softmaxRows(e1); R.Y = matmul(R.A, X); R.x = X; R.q = [ex.s0];
+      return R;
+    }
+    if (n === 2 || n === 3) {
+      var s = n === 3 ? opt.stretch : 1;
+      var q = [Q[2].map(function (c) { return c * s; })];
+      var x = scaleM(X, s);
+      var e = matmul(q, T(x));
+      if (n === 3 && opt.scale) e = scaleM(e, 1 / Math.sqrt(2));
+      R.E = e; R.A = softmaxRows(e); R.Y = matmul(R.A, x); R.x = x; R.q = q;
+      return R;
+    }
+    if (n === 4) {
+      var r4 = attention(Q, X, X);
+      r4.x = X; r4.q = Q; r4.order = ident;
+      return r4;
+    }
+    if (n === 5 || n === 6) {
+      var K = matmul(X, ex.WK), V = matmul(X, ex.WV);
+      var r5 = attention(Q, K, V);
+      r5.K = K; r5.V = V; r5.x = X; r5.q = Q; r5.order = ident;
+      return r5;
+    }
+    if (n === 7) {
+      var x7 = opt.example === "pronome" ? ex.pron : X;
+      var r7 = selfAttention(x7, ex.WQ, ex.WK, ex.WV);
+      r7.x = x7; r7.order = range(x7.length);
+      return r7;
+    }
+    if (n === 8 || n === 9) {
+      var order = opt.permute ? PERM : ident;
+      var xi = order.map(function (i) { return X[i]; });
+      var P = null;
+      if (n === 9 && opt.positions) { P = positions(xi.length); xi = addM(xi, P); }
+      var r8 = selfAttention(xi, ex.WQ, ex.WK, ex.WV);
+      r8.x = xi; r8.order = order; r8.P = P;
+      return r8;
+    }
+    if (n === 10) {
+      var P10 = positions(X.length), x10 = addM(X, P10);
+      var r10 = selfAttention(x10, ex.WQ, ex.WK, ex.WV, opt.mask ? causal(X.length) : null);
+      r10.x = x10; r10.P = P10; r10.order = ident; r10.mask = opt.mask ? causal(X.length) : null;
+      r10.Eraw = selfAttention(x10, ex.WQ, ex.WK, ex.WV).E;
+      return r10;
+    }
+    if (n === 11) {
+      var g = generation(3);
+      g.order = [0, 1, 2];
+      return g;
+    }
+    if (n === 12 || n === 13) {
+      var h1 = selfAttention(X, ex.WQ, ex.WK, ex.WV);
+      var h2 = selfAttention(X, HEAD2.WQ, HEAD2.WK, HEAD2.WV);
+      var stacked = h1.Y.map(function (r, i) { return r.concat(h2.Y[i]); });
+      return { order: ident, x: X, heads: [h1, h2], stacked: stacked, A: h1.A, A2: h2.A, Y: matmul(stacked, WO) };
+    }
+    if (n === 14) {
+      return { memoryBytes: opt.memH * opt.memN * opt.memN * opt.bytes };
+    }
+    return R;
+  }
+
+  /* ================= Vista geométrica ================= */
+  var svg = document.getElementById("plot");
+  var SIZE = 520, C = 260, R_PX = 225;
+  var extent = 2.2;
+  var NS = "http://www.w3.org/2000/svg";
+
+  function sx(x) { return C + x / extent * R_PX; }
+  function sy(y) { return C - y / extent * R_PX; }
+  function node(tag, attrs, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function chooseExtent(vectors) {
+    var m = 0;
+    vectors.forEach(function (v) { m = Math.max(m, Math.abs(v[0]), Math.abs(v[1])); });
+    extent = m > 2.05 ? Math.min(3.3, Math.ceil(m * 1.15 * 2) / 2) : 2.2;
+  }
+
+  function drawGrid() {
+    for (var t = -Math.floor(extent); t <= Math.floor(extent); t++) {
+      svg.appendChild(node("line", { "class": t === 0 ? "axis" : "grid", x1: sx(t), y1: sy(-extent), x2: sx(t), y2: sy(extent) }));
+      svg.appendChild(node("line", { "class": t === 0 ? "axis" : "grid", x1: sx(-extent), y1: sy(t), x2: sx(extent), y2: sy(t) }));
+      if (t !== 0) {
+        svg.appendChild(node("text", { "class": "tick", x: sx(t), y: C + 16, "text-anchor": "middle" }, t));
+        svg.appendChild(node("text", { "class": "tick", x: C - 8, y: sy(t) + 4, "text-anchor": "end" }, t));
+      }
+    }
+  }
+
+  function isHl(role, i) { return state.highlight && state.highlight.role === role && state.highlight.i === i; }
+
+  function arrow(v, role, i, label, opts) {
+    opts = opts || {};
+    var g = node("g", { "data-role": opts.hlRole || role, "data-i": i });
+    if (isHl(opts.hlRole || role, i)) g.setAttribute("class", "hl");
+    if (opts.dim) g.setAttribute("class", (g.getAttribute("class") || "") + " dim");
+    var from = opts.from || [0, 0];
+    g.appendChild(node("line", { "class": "vec " + role, x1: sx(from[0]), y1: sy(from[1]), x2: sx(v[0]), y2: sy(v[1]) }));
+    g.appendChild(node("circle", { "class": "tip " + role, cx: sx(v[0]), cy: sy(v[1]), r: 6 }));
+    var right = v[0] >= 0;
+    // perto da borda, o rótulo vai para o outro lado da ponta, para não ser cortado
+    if (sx(v[0]) > SIZE - 130) right = false;
+    else if (sx(v[0]) < 130) right = true;
+    var dx = right ? 10 : -10, anchor = right ? "start" : "end";
+    g.appendChild(node("text", { "class": "label " + role + (opts.small ? " small" : ""), x: sx(v[0]) + dx, y: sy(v[1]) - 9, "text-anchor": anchor }, label));
+    if (opts.drag) {
+      // last, so that it receives the pointer before the tip and the label
+      g.appendChild(node("circle", { "class": "handle", cx: sx(v[0]), cy: sy(v[1]), r: 20, "data-drag": opts.drag, tabindex: 0,
+                                     "aria-label": "Arrastar " + (label || opts.drag) + " (Shift + setas)" }));
+    }
+    svg.appendChild(g);
+  }
+
+  function outputPoint(v, i, label, hlRole, showLabel) {
+    var g = node("g", { "data-role": hlRole, "data-i": i });
+    if (isHl(hlRole, i)) g.setAttribute("class", "hl");
+    if (showLabel === false && !isHl(hlRole, i)) label = "";
+    g.appendChild(node("rect", { "class": "out", x: sx(v[0]) - 6, y: sy(v[1]) - 6, width: 12, height: 12,
+                                 transform: "rotate(45 " + sx(v[0]) + " " + sy(v[1]) + ")" }));
+    g.appendChild(node("text", { "class": "label output", x: sx(v[0]) + 10, y: sy(v[1]) + 18 }, label));
+    svg.appendChild(g);
+  }
+
+  function wires(from, targets, weights, allowed) {
+    targets.forEach(function (t, j) {
+      if (allowed && !allowed[j]) return;
+      var w = weights[j];
+      svg.appendChild(node("line", { "class": "wire", x1: sx(from[0]), y1: sy(from[1]), x2: sx(t[0]), y2: sy(t[1]),
+                                     "stroke-width": (1 + 9 * w).toFixed(2), opacity: (0.2 + 0.75 * w).toFixed(2) }));
+    });
+  }
+  function compares(from, targets, count) {
+    targets.forEach(function (t, j) {
+      if (j >= count) return;
+      svg.appendChild(node("line", { "class": "cmp", x1: sx(from[0]), y1: sy(from[1]), x2: sx(t[0]), y2: sy(t[1]) }));
+    });
+  }
+
+  function selected(role, fallback, count) {
+    if (state.highlight && state.highlight.role === role && state.highlight.i < count) return state.highlight.i;
+    return fallback;
+  }
+
+  function legend(items) {
+    document.getElementById("legend").innerHTML = items.map(function (it) {
+      return "<span><i style=\"background:var(" + it[0] + ")\"></i>" + it[1] + "</span>";
+    }).join("");
+  }
+
+  function useTape(n) { return n === 11 || ((n === 6 || n === 7) && opt.view === "fita"); }
+
+  function drawPlot(n, R) {
+    svg.innerHTML = "";
+    svg.setAttribute("aria-label", useTape(n) ? "Palavras ligadas pelos pesos de atenção" : "Plano com os vetores do passo atual");
+    if (n === 14) { drawMemoryCurve(); legend([]); return; }
+    if (useTape(n)) { drawTape(n, R); return; }
+    var st = state.stage;
+    var vecs = [];
+    if (R.x) vecs = vecs.concat(R.x);
+    if (R.q) vecs = vecs.concat(R.q);
+    if (R.K && (opt.geo === "K" || n === 5)) vecs = vecs.concat(R.K);
+    if (R.V && (opt.geo === "V" || n === 5)) vecs = vecs.concat(R.V);
+    chooseExtent(vecs.concat(ex.data));
+    drawGrid();
+
+    if (n === 1) {
+      wires(ex.s0, ex.data, R.A[0]);
+      ex.data.forEach(function (h, i) { arrow(h, "data", i, "h" + SUB[i] + " " + DATA_LABELS[i], { drag: "data:" + i }); });
+      arrow(ex.s0, "query", 0, "s₀", { drag: "s0" });
+      outputPoint(R.Y[0], 0, "c", "query");
+      legend([["--data", "estados do encoder hᵢ"], ["--query", "estado do decoder s₀"], ["--output", "contexto c"], ["--accent", "peso aᵢ"]]);
+      return;
+    }
+    if (n === 2 || n === 3) {
+      var s2 = n === 2 ? st : 7;
+      if (s2 >= 6) wires(R.q[0], R.x, R.A[0]);
+      else compares(R.q[0], R.x, s2 - 1);
+      R.x.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i }); });
+      arrow(R.q[0], "query", 2, "q (cielo)", { drag: "query:2" });
+      if (s2 >= 7) outputPoint(R.Y[0], 2, "y", "query");
+      legend([["--data", "dados X"], ["--query", "consulta q"], ["--output", "saída y"], [s2 >= 6 ? "--accent" : "--ink-faint", s2 >= 6 ? "peso aᵢ" : "comparação (tracejado)"]]);
+      return;
+    }
+    if (n === 5 && st < 3) {
+      ex.data.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i, dim: true }); });
+      R.K.forEach(function (v, i) { arrow(v, "key", i, "k " + DATA_LABELS[i], { hlRole: "data" }); });
+      if (st >= 2) R.V.forEach(function (v, i) { arrow(v, "value", i, "v " + DATA_LABELS[i], { hlRole: "data" }); });
+      ex.queries.forEach(function (q, i) { arrow(q, "query", i, QUERY_PLOT[i], { drag: "query:" + i, dim: true }); });
+      legend([["--data", "dados X (apagados) e chaves K (tracejado)"]].concat(st >= 2 ? [["--measure", "valores V (pontilhado)"]] : []).concat([["--query", "consultas Q"]]));
+      return;
+    }
+    if (n >= 4 && n <= 6) {
+      var rows = n === 4 ? (st >= 5 ? 3 : st - 1) : 3;
+      var sel = selected("query", n === 4 && st >= 2 && st <= 4 ? st - 2 : 2, 3);
+      var targets = opt.geo === "K" && R.K ? R.K : opt.geo === "V" && R.V ? R.V : ex.data;
+      var role = opt.geo === "K" && R.K ? "key" : opt.geo === "V" && R.V ? "value" : "data";
+      if (sel < rows) wires(ex.queries[sel], targets, R.A[sel]);
+      targets.forEach(function (v, i) {
+        arrow(v, role, i, (role === "key" ? "k " : role === "value" ? "v " : "") + DATA_LABELS[i],
+              { drag: role === "data" ? "data:" + i : null, hlRole: "data" });
+      });
+      ex.queries.forEach(function (q, i) { arrow(q, "query", i, QUERY_PLOT[i], { drag: "query:" + i, dim: i !== sel && !isHl("query", i) && state.highlight !== null }); });
+      R.Y.forEach(function (y, i) { if (i < rows) outputPoint(y, i, "y" + SUB[i] + " " + QUERY_LABELS[i], "query", i === sel); });
+      var leg = [["--query", "consultas Q"], ["--output", "saídas Y (rótulo na destacada)"], ["--accent", "pesos da consulta destacada"]];
+      leg.unshift(role === "key" ? ["--data", "chaves K (tracejado)"] : role === "value" ? ["--measure", "valores V (pontilhado)"] : ["--data", "dados X"]);
+      legend(leg);
+      return;
+    }
+    if (n >= 7 && n <= 10) {
+      var pron = n === 7 && opt.example === "pronome";
+      var labelsOf = pron ? PRON_LABELS : DATA_LABELS;
+      var count = R.x.length;
+      var rows7 = count;
+      if (n === 7 && !pron) rows7 = st === 1 ? 0 : st >= 6 ? 4 : st - 1;
+      if (n === 10 && opt.mask) rows7 = st >= 3 ? 4 : 0;
+      var selI = pron ? PRON_ELE : (n === 7 && st >= 2 && st <= 5 ? st - 2 : 0);
+      if (state.highlight && state.highlight.role === "data") {
+        var pos = R.order.indexOf(state.highlight.i);
+        if (pos >= 0) selI = pos;
+      }
+      var allowed = R.mask ? R.mask[selI].map(function (m) { return !m; }) : null;
+      if (selI < rows7) wires(R.x[selI], R.x, R.A[selI], allowed);
+      if (R.P) R.order.forEach(function (orig, t) { arrow(R.x[t], "pos", orig, "", { from: ex.data[orig], hlRole: "data" }); });
+      R.order.forEach(function (orig, t) {
+        arrow(R.x[t], "data", orig, labelsOf[orig] + (R.P ? " + P" + SUB[t] : ""),
+              { drag: R.P ? null : (pron ? "pron:" : "data:") + orig, dim: allowed && !allowed[t] && selI < rows7, small: pron });
+      });
+      if (R.P) R.order.forEach(function (orig) { arrow(ex.data[orig], "data", orig, "", { drag: "data:" + orig, dim: true }); });
+      var outRows = n === 10 && opt.mask ? (st >= 4 ? 4 : 0) : rows7;
+      R.order.forEach(function (orig, t) { if (t < outRows) outputPoint(R.Y[t], orig, "y " + labelsOf[orig], "data", t === selI); });
+      legend([["--data", R.P ? "entrada X + P (posição tracejada)" : "entrada X"], ["--output", "saídas Y (rótulo na destacada)"], ["--accent", "pesos do vetor destacado"]]);
+      return;
+    }
+    if (n === 12 || n === 13) {
+      var head = n === 12 ? opt.head : -1;
+      var selD = selected("data", 0, 4);
+      if (head >= 0) {
+        var H = R.heads[head];
+        wires(H.Q[selD], H.K, H.A[selD]);
+        H.K.forEach(function (v, i) { arrow(v, "key", i, "k " + DATA_LABELS[i], { hlRole: "data" }); });
+        arrow(H.Q[selD], "query", selD, "q " + DATA_LABELS[selD], { hlRole: "data" });
+        H.Y.forEach(function (y, i) { outputPoint(y, i, "y" + (head + 1) + " " + DATA_LABELS[i], "data", i === selD); });
+        legend([["--data", "chaves da cabeça " + (head + 1)], ["--query", "consulta destacada"], ["--output", "saídas da cabeça"]]);
+      } else {
+        ex.data.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i }); });
+        R.Y.forEach(function (y, i) { outputPoint(y, i, "o " + DATA_LABELS[i], "data", i === selD); });
+        legend([["--data", "entrada X"], ["--output", "saídas O = Y W_O"]]);
+      }
+    }
+  }
+
+  /* ---------- palavras ligadas pelos pesos (research R6) ---------- */
+  function tapeYs(k) {
+    var top = 105, bottom = 480, mid = (top + bottom) / 2;
+    if (k === 1) return [mid];
+    var sp = Math.min(70, (bottom - top) / (k - 1));
+    var start = mid - sp * (k - 1) / 2;
+    return range(k).map(function (i) { return start + i * sp; });
+  }
+  function drawTape(n, R) {
+    var XL = 110, XR = 330, LINE_L = 222, LINE_R = 322;
+    var st = state.stage, cfg;
+    var hl = state.highlight;
+    if (n === 6) {
+      cfg = { left: QUERY_LABELS, right: DATA_LABELS, A: R.A, lRole: "query", rRole: "data",
+              headL: "Q vem daqui", subL: "italiano: consultas", headR: "K e V vêm daqui", subR: "inglês: chaves e valores",
+              avail: 3, active: hl && hl.role === "query" ? hl.i : null, activeR: hl && hl.role === "data" ? hl.i : null };
+    } else if (n === 7) {
+      var pron = opt.example === "pronome";
+      var words = pron ? PRON_LABELS : DATA_LABELS;
+      var rows = pron ? words.length : (st === 1 ? 0 : st >= 6 ? 4 : st - 1);
+      var act = pron ? PRON_ELE : (st >= 2 && st <= 5 ? st - 2 : null);
+      if (hl && hl.role === "data" && hl.i < words.length) act = hl.i;
+      cfg = { left: words, right: words, A: R.A, lRole: "data", rRole: "data", single: true,
+              headL: "Q, K e V vêm da mesma frase", subL: "como consulta", subR: "como chave e valor",
+              avail: words.length, rows: rows, active: act, activeR: null };
+    } else {
+      var avail = st === 1 ? 0 : st >= 5 ? 3 : st - 1;
+      var act11 = st >= 2 && st <= 4 ? st - 2 : null;
+      if (hl && hl.role === "gen" && hl.i < avail) act11 = hl.i;
+      cfg = { left: QUERY_LABELS, right: DATA_LABELS, A: R.crossA, lRole: "gen", rRole: "data",
+              headL: "Decoder", subL: "uma palavra por vez", headR: "Encoder", subR: "calculado uma vez",
+              avail: avail, rows: avail, active: act11, activeR: null, selfA: R.selfA };
+    }
+    if (cfg.rows == null) cfg.rows = cfg.avail;
+    var yl = tapeYs(cfg.left.length), yr = tapeYs(cfg.right.length);
+    var big = cfg.left.length > 6;
+
+    // cabeçalhos
+    if (cfg.single) {
+      svg.appendChild(node("text", { "class": "tape-head", x: 260, y: 36, "text-anchor": "middle" }, cfg.headL));
+    } else {
+      svg.appendChild(node("text", { "class": "tape-head " + cfg.lRole, x: XL, y: 36 }, cfg.headL));
+      svg.appendChild(node("text", { "class": "tape-head " + cfg.rRole, x: XR, y: 36 }, cfg.headR));
+    }
+    svg.appendChild(node("text", { "class": "tape-sub", x: XL, y: 60 }, cfg.subL));
+    svg.appendChild(node("text", { "class": "tape-sub", x: XR, y: 60 }, cfg.subR));
+
+    // arcos de self-attention do decoder (passo 11), à esquerda das palavras
+    if (cfg.selfA) {
+      for (var i = 0; i < cfg.rows; i++) {
+        if (cfg.active != null && i !== cfg.active) continue;
+        for (var j = 0; j <= i; j++) {
+          var w = cfg.selfA[i][j], x0 = XL - 10, d;
+          if (i === j) d = "M " + x0 + " " + (yl[i] - 7) + " C " + (x0 - 38) + " " + (yl[i] - 26) + " " + (x0 - 38) + " " + (yl[i] + 14) + " " + x0 + " " + (yl[i] + 3);
+          else d = "M " + x0 + " " + (yl[i] - 4) + " Q " + (x0 - 40 - 22 * (i - j)) + " " + ((yl[i] + yl[j]) / 2 - 4) + " " + x0 + " " + (yl[j] - 4);
+          svg.appendChild(node("path", { "class": "arc self", d: d, "stroke-width": (1 + 8 * w).toFixed(2),
+            opacity: (cfg.active == null ? 0.1 + 0.6 * w : 0.2 + 0.75 * w).toFixed(2), "data-kind": "self", "data-from": i, "data-to": j, "data-w": w.toFixed(4) }));
+        }
+      }
+    }
+    // arcos entre as colunas
+    for (var a = 0; a < cfg.rows; a++) {
+      if (cfg.active != null && a !== cfg.active) continue;
+      for (var b = 0; b < cfg.right.length; b++) {
+        if (cfg.activeR != null && b !== cfg.activeR) continue;
+        var wt = cfg.A[a][b];
+        var path = "M " + LINE_L + " " + (yl[a] - 5) + " C " + (LINE_L + 45) + " " + (yl[a] - 5) + " " + (LINE_R - 45) + " " + (yr[b] - 5) + " " + LINE_R + " " + (yr[b] - 5);
+        var focus = cfg.active != null || cfg.activeR != null;
+        svg.appendChild(node("path", { "class": "arc", d: path, "stroke-width": (1 + 9 * wt).toFixed(2),
+          opacity: (focus ? 0.2 + 0.75 * wt : 0.08 + 0.6 * wt).toFixed(2), "data-kind": "cross", "data-from": a, "data-to": b, "data-w": wt.toFixed(4) }));
+      }
+    }
+    // palavras
+    function word(text, x, y, role, i, dim, col) {
+      var g = node("g", { "data-role": role, "data-i": i, "data-col": col, tabindex: 0 });
+      var cls = [];
+      if (isHl(role, i)) cls.push("hl");
+      if (dim) cls.push("dim");
+      if (cls.length) g.setAttribute("class", cls.join(" "));
+      g.appendChild(node("text", { "class": "tword " + role + (big ? " small" : ""), x: x, y: y }, text));
+      svg.appendChild(g);
+    }
+    cfg.left.forEach(function (w2, i2) {
+      var isAct = cfg.active === i2;
+      word(w2, XL, yl[i2], cfg.lRole, i2, i2 >= cfg.avail, "q");
+      if (isAct && n !== 11) svg.lastChild.setAttribute("class", (svg.lastChild.getAttribute("class") || "") + " act");
+    });
+    cfg.right.forEach(function (w3, i3) { word(w3, XR, yr[i3], cfg.rRole, i3, false, "kv"); });
+    // pesos da palavra ativa, ao lado das palavras da direita
+    if (cfg.active != null && cfg.active < cfg.rows) {
+      cfg.right.forEach(function (_, b2) {
+        svg.appendChild(node("text", { "class": "wval", x: 508, y: yr[b2], "text-anchor": "end" }, fmt(cfg.A[cfg.active][b2])));
+      });
+    }
+    if (n === 11) legend([["--accent", "cross-attention: a palavra atual olha a frase de origem"], ["--query", "self-attention: olha as palavras já geradas"]]);
+    else legend([["--accent", "peso (espessura da linha)"]]);
+  }
+
+  function drawMemoryCurve() {
+    var W = SIZE, Hh = SIZE, l = 70, r = 20, t = 30, b = 60;
+    var maxN = Math.max(opt.memN, 1000);
+    var maxB = opt.memH * maxN * maxN * opt.bytes / Math.pow(2, 30);
+    svg.appendChild(node("line", { "class": "axis", x1: l, y1: Hh - b, x2: W - r, y2: Hh - b }));
+    svg.appendChild(node("line", { "class": "axis", x1: l, y1: t, x2: l, y2: Hh - b }));
+    var pts = [];
+    for (var k = 0; k <= 60; k++) {
+      var nn = maxN * k / 60, gb = opt.memH * nn * nn * opt.bytes / Math.pow(2, 30);
+      pts.push((l + (W - l - r) * k / 60).toFixed(1) + "," + (Hh - b - (Hh - t - b) * gb / maxB).toFixed(1));
+    }
+    svg.appendChild(node("polyline", { points: pts.join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 3 }));
+    svg.appendChild(node("circle", { cx: W - r, cy: t, r: 7, fill: "var(--accent)" }));
+    svg.appendChild(node("text", { "class": "label output", x: W - r - 10, y: t + 28, "text-anchor": "end" }, fmtBytes(opt.memH * maxN * maxN * opt.bytes)));
+    svg.appendChild(node("text", { "class": "tick", x: (l + W - r) / 2, y: Hh - 20, "text-anchor": "middle" }, "N (0 a " + maxN.toLocaleString("pt-BR") + ")"));
+    svg.appendChild(node("text", { "class": "tick", x: 20, y: (t + Hh - b) / 2, transform: "rotate(-90 20 " + (t + Hh - b) / 2 + ")", "text-anchor": "middle" }, "memória de A"));
+    svg.appendChild(node("text", { "class": "tick", x: l + 10, y: t + 10 }, "cresce com N²"));
+  }
+
+  function fmtBytes(b) {
+    var gib = b / Math.pow(2, 30);
+    if (gib >= 1) return gib.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " GiB";
+    var mib = b / Math.pow(2, 20);
+    if (mib >= 1) return mib.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " MiB";
+    return (b / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " KiB";
+  }
+
+  /* ---------- arrastar ---------- */
+  var dragging = null;
+  function pointerToMath(evt) {
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    var p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return [Math.round((p.x - C) / R_PX * extent * 10) / 10, Math.round((C - p.y) / R_PX * extent * 10) / 10];
+  }
+  function vecList(kind) { return kind === "data" ? ex.data : kind === "pron" ? ex.pron : ex.queries; }
+  function getByKey(key) { if (key === "s0") return ex.s0; var p = key.split(":"); return vecList(p[0])[+p[1]]; }
+  function setByKey(key, v) {
+    var stretch = state.step === 3 ? opt.stretch : 1;
+    v = clampV([v[0] / stretch, v[1] / stretch]).map(function (c) { return Math.round(c * 10) / 10; });
+    if (key === "s0") ex.s0 = v;
+    else { var p = key.split(":"); vecList(p[0])[+p[1]] = v; }
+  }
+  svg.addEventListener("pointerdown", function (evt) {
+    var key = evt.target.getAttribute && evt.target.getAttribute("data-drag");
+    if (!key) return;
+    dragging = key;
+    svg.setPointerCapture(evt.pointerId);
+    evt.preventDefault();
+  });
+  svg.addEventListener("pointermove", function (evt) {
+    if (!dragging) return;
+    setByKey(dragging, pointerToMath(evt));
+    render(false);
+  });
+  function stopDrag() { dragging = null; }
+  svg.addEventListener("pointerup", stopDrag);
+  svg.addEventListener("pointercancel", stopDrag);
+  svg.addEventListener("keydown", function (evt) {
+    var key = evt.target.getAttribute && evt.target.getAttribute("data-drag");
+    if (!key) return;
+    var d = { ArrowUp: [0, 0.1], ArrowDown: [0, -0.1], ArrowLeft: [-0.1, 0], ArrowRight: [0.1, 0] }[evt.key];
+    if (!d || !evt.shiftKey) return;
+    evt.preventDefault(); evt.stopPropagation();
+    var cur = getByKey(key);
+    var stretch = state.step === 3 ? opt.stretch : 1;
+    setByKey(key, [(cur[0] + d[0]) * stretch, (cur[1] + d[1]) * stretch]);
+    render(false);
+    var again = svg.querySelector("[data-drag=\"" + key + "\"]");
+    if (again) again.focus();
+  });
+
+  /* ================= Vista de matrizes ================= */
+  function dims(m) { return m.length + " × " + m[0].length; }
+  var newKeys = [];
+
+  function matrix(spec) {
+    // spec: {key, name, m, rowLabels, rowRole, rowIds, heat, sum, edit, editRow, mask, cols, rowsShown, colsShown, hlRows}
+    var isNew = newKeys.indexOf(spec.key) >= 0;
+    var h = "<div class=\"mat" + (isNew ? " is-new" : "") + "\" data-mat=\"" + spec.key + "\">";
+    h += "<div class=\"mat-name\">" + spec.name + "<span class=\"dims\">[" + (spec.dims || dims(spec.m)) + "]</span>" +
+         (isNew ? "<span class=\"is-new-tag\">novo</span>" : "") + "</div><div class=\"mat-scroll\"><table class=\"m\">";
+    if (spec.cols) h += "<tr><th></th>" + spec.cols.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr>";
+    spec.m.forEach(function (row, i) {
+      var id = spec.rowIds ? spec.rowIds[i] : i;
+      var role = spec.rowRole;
+      var rowHidden = spec.rowsShown != null && i >= spec.rowsShown;
+      var hlRow = (role && isHl(role, id)) || (!state.highlight && spec.hlRows && spec.hlRows.indexOf(i) >= 0);
+      h += "<tr" + (hlRow ? " class=\"hl\"" : "") + (role ? " data-role=\"" + role + "\" data-i=\"" + id + "\" tabindex=\"0\"" : "") + ">";
+      h += "<th class=\"row" + (role ? " role-" + role : "") + "\">" + (spec.rowLabels ? spec.rowLabels[i] : "") + "</th>";
+      row.forEach(function (x, j) {
+        var hidden = rowHidden || (spec.colsShown != null && j >= spec.colsShown);
+        var masked = spec.mask && spec.mask[i][j];
+        var style = "";
+        if (spec.heat && !masked && !hidden) {
+          style = " style=\"background:color-mix(in srgb, var(--accent) " + Math.round(x * 70) + "%, transparent)\"";
+        }
+        var cellCls = masked ? " class=\"masked\"" : hidden ? " class=\"pending\"" : "";
+        var content;
+        if (hidden) content = "·";
+        else if (spec.edit) content = "<input type=\"number\" step=\"0.1\" min=\"-3\" max=\"3\" value=\"" + x.toFixed(1) + "\" data-edit=\"" + spec.edit + ":" + (spec.editRow != null ? spec.editRow : i) + ":" + j + "\" aria-label=\"" + spec.key + " linha " + (i + 1) + " coluna " + (j + 1) + "\">";
+        else content = masked && !spec.heat ? "−∞" : fmt(x);
+        h += "<td" + cellCls + style + ">" + content + "</td>";
+      });
+      if (spec.sum) {
+        var s = row.reduce(function (a, b) { return a + b; }, 0);
+        h += "<td class=\"sum\">Σ = " + (rowHidden || spec.colsShown != null && spec.colsShown < row.length ? "…" : s.toFixed(2)) + "</td>";
+      }
+      h += "</tr>";
+    });
+    return h + "</table></div></div>";
+  }
+  function block(title, inner) {
+    return "<div class=\"mblock\"><div class=\"mblock-title\">" + title + "</div><div class=\"mats\">" + inner + "</div></div>";
+  }
+
+  var D_LAB = ["x₁", "x₂"];
+
+  function drawMatrices(n, R) {
+    var out = "", rl = DATA_LABELS, ql = QUERY_NAMES, st = state.stage;
+    var dataSpec = { key: "X", name: "X", m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB };
+    if (n === 1) {
+      out += matrix({ key: "h", name: "h (estados do encoder)", m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB });
+      out += matrix({ key: "s0", name: "s₀", m: [ex.s0], rowLabels: ["s₀"], rowRole: "query", rowIds: [0], edit: "s0", cols: D_LAB });
+      out += matrix({ key: "e", name: "e = f<sub>att</sub>(s₀, hᵢ)", m: R.E, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: rl });
+      out += matrix({ key: "a", name: "a = softmax(e)", m: R.A, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: rl, heat: true, sum: true });
+      out += matrix({ key: "c", name: "c = Σ aᵢhᵢ", m: R.Y, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: D_LAB });
+    } else if (n === 2 || n === 3) {
+      var s = n === 3 ? opt.stretch : 1, s2 = n === 2 ? st : 7;
+      var qlab = ["q <span class=\"w\">cielo</span>"];
+      out += matrix({ key: "q", name: s !== 1 ? "q (esticado ×" + s + ")" : "q", m: R.q, rowLabels: qlab, rowRole: "query", rowIds: [2], edit: s === 1 ? "query2" : null, cols: D_LAB });
+      out += matrix({ key: "X", name: s !== 1 ? "X (esticado ×" + s + ")" : "X", m: R.x, rowLabels: rl, rowRole: "data", edit: s === 1 ? "data" : null, cols: D_LAB });
+      var ename = n === 3 && opt.scale ? "e = q·Xᵢ / √D" : "e = q·Xᵢ";
+      if (s2 >= 2) out += matrix({ key: "e", name: ename, m: R.E, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: rl, colsShown: Math.min(4, s2 - 1) });
+      if (s2 >= 6) out += matrix({ key: "a", name: "a = softmax(e)", m: R.A, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: rl, heat: true, sum: true });
+      if (s2 >= 7) out += matrix({ key: "y", name: "y = Σ aᵢXᵢ", m: R.Y, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: D_LAB });
+    } else if (n === 4) {
+      var rows4 = st >= 5 ? 3 : st - 1;
+      var hl4 = st >= 2 && st <= 4 ? [st - 2] : st === 5 ? [0, 1, 2] : null;
+      out += matrix({ key: "Q", name: "Q", m: ex.queries, rowLabels: ql, rowRole: "query", edit: "queries", cols: D_LAB, hlRows: hl4 });
+      out += matrix(dataSpec);
+      if (st >= 2) {
+        out += matrix({ key: "E", name: "E = QXᵀ / √D", m: R.E, rowLabels: ql, rowRole: "query", cols: rl, rowsShown: rows4, hlRows: hl4 });
+        out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: ql, rowRole: "query", cols: rl, heat: true, sum: true, rowsShown: rows4, hlRows: hl4 });
+        out += matrix({ key: "Y", name: "Y = AX", m: R.Y, rowLabels: ql, rowRole: "query", cols: D_LAB, rowsShown: rows4, hlRows: hl4 });
+      }
+    } else if (n === 5 || n === 6) {
+      var s5 = n === 5 ? st : 3, it = n === 6 ? " <span class=\"w\">(italiano)</span>" : "", en = n === 6 ? " <span class=\"w\">(inglês)</span>" : "";
+      out += matrix({ key: "Q", name: "Q" + it, m: ex.queries, rowLabels: ql, rowRole: "query", edit: "queries", cols: D_LAB });
+      out += matrix(n === 6 ? { key: "X", name: "X" + en, m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB } : dataSpec);
+      if (n === 5) out += matrix({ key: "WK", name: "W<sub>K</sub>", m: ex.WK, rowLabels: D_LAB, edit: "WK", cols: ["k₁", "k₂"] });
+      out += matrix({ key: "K", name: "K = XW<sub>K</sub>" + en, m: R.K, rowLabels: rl, rowRole: "data", cols: D_LAB });
+      if (s5 >= 2) {
+        if (n === 5) out += matrix({ key: "WV", name: "W<sub>V</sub>", m: ex.WV, rowLabels: D_LAB, edit: "WV", cols: ["v₁", "v₂"] });
+        out += matrix({ key: "V", name: "V = XW<sub>V</sub>" + en, m: R.V, rowLabels: rl, rowRole: "data", cols: D_LAB });
+      }
+      if (s5 >= 3) {
+        out += matrix({ key: "E", name: "E = QKᵀ / √D", m: R.E, rowLabels: ql, rowRole: "query", cols: rl });
+        out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: ql, rowRole: "query", cols: rl, heat: true, sum: true });
+        out += matrix({ key: "Y", name: "Y = AV" + (n === 6 ? " <span class=\"w\">(uma saída por consulta)</span>" : ""), m: R.Y, rowLabels: ql, rowRole: "query", cols: D_LAB });
+      }
+    } else if (n === 7 && opt.example === "pronome") {
+      var pl = PRON_LABELS;
+      out += matrix({ key: "X", name: "X", m: ex.pron, rowLabels: pl, rowRole: "data", edit: "pron", cols: D_LAB, hlRows: [PRON_ELE] });
+      out += matrix({ key: "A", name: "A = softmax(QKᵀ/√D)", m: R.A, rowLabels: pl, rowRole: "data", cols: pl, heat: true, sum: true, hlRows: [PRON_ELE] });
+      out += matrix({ key: "Y", name: "Y = AV", m: R.Y, rowLabels: pl, rowRole: "data", cols: D_LAB, hlRows: [PRON_ELE] });
+      out += "<p class=\"note\" style=\"flex-basis:100%;margin:0\">Q = XW<sub>Q</sub>, K = XW<sub>K</sub> e V = XW<sub>V</sub> usam os mesmos pesos do exemplo <i>we see the sky</i>.</p>";
+    } else if (n >= 7 && n <= 10) {
+      var labels = R.order.map(function (i) { return DATA_LABELS[i]; });
+      var rowIds = R.order;
+      var rows7 = 4, hl7 = null;
+      if (n === 7) { rows7 = st === 1 ? 0 : st >= 6 ? 4 : st - 1; hl7 = st >= 2 && st <= 5 ? [st - 2] : null; }
+      if (n >= 8) {
+        if (R.P) out += matrix({ key: "P", name: "P (posição)", m: R.P, rowLabels: ["t=0", "t=1", "t=2", "t=3"], cols: D_LAB });
+        out += matrix({ key: "perm", name: R.P ? "X + P" : (opt.permute ? "σ(X)" : "X"), m: R.x, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
+      } else {
+        out += matrix(dataSpec);
+        out += matrix({ key: "WQ", name: "W<sub>Q</sub>", m: ex.WQ, rowLabels: D_LAB, edit: "WQ", cols: ["q₁", "q₂"] });
+      }
+      out += matrix({ key: "Qs", name: "Q = XW<sub>Q</sub>", m: R.Q, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB, hlRows: hl7 });
+      out += matrix({ key: "K", name: "K = XW<sub>K</sub>", m: R.K, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
+      out += matrix({ key: "V", name: "V = XW<sub>V</sub>", m: R.V, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
+      var masked10 = n === 10 && opt.mask;
+      if (n !== 7 || st >= 2) {
+        if (masked10 && st === 1) out += matrix({ key: "E", name: "E = QKᵀ / √D (sem máscara)", m: R.Eraw, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels });
+        else out += matrix({ key: "E", name: "E = QKᵀ / √D", m: R.E, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, mask: R.mask, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
+        if (!masked10 || st >= 3) out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, heat: true, sum: true, mask: R.mask, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
+        if (!masked10 || st >= 4) out += matrix({ key: "Y", name: "Y = AV", m: R.Y, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
+      }
+    } else if (n === 11) {
+      out += drawGenerationMatrices(R, st);
+    } else if (n === 12 || n === 13) {
+      if (n === 12) {
+        R.heads.forEach(function (H, h) {
+          out += matrix({ key: "heads", name: "A da cabeça " + (h + 1), m: H.A, rowLabels: rl, rowRole: "data", cols: rl, heat: true, sum: true });
+        });
+        R.heads.forEach(function (H, h) {
+          out += matrix({ key: "heads", name: "Y da cabeça " + (h + 1), m: H.Y, rowLabels: rl, rowRole: "data", cols: D_LAB });
+        });
+      }
+      out += matrix({ key: "heads", name: "Y empilhado", m: R.stacked, rowLabels: rl, rowRole: "data", cols: ["c1·1", "c1·2", "c2·1", "c2·2"] });
+      out += matrix({ key: "WO", name: "W<sub>O</sub>", m: WO, rowLabels: ["c1·1", "c1·2", "c2·1", "c2·2"], cols: D_LAB });
+      out += matrix({ key: "WO", name: "O = Y W<sub>O</sub>", m: R.Y, rowLabels: rl, rowRole: "data", cols: D_LAB });
+    }
+    document.getElementById("mats").innerHTML = out;
+  }
+
+  function drawGenerationMatrices(R, st) {
+    var rl = DATA_LABELS;
+    var enc = matrix({ key: "X", name: "X", m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB }) +
+      matrix({ key: "Kenc", name: "K<sub>enc</sub> = XW<sub>K</sub>", m: R.Kenc, rowLabels: rl, rowRole: "data", cols: D_LAB }) +
+      matrix({ key: "Venc", name: "V<sub>enc</sub> = XW<sub>V</sub>", m: R.Venc, rowLabels: rl, rowRole: "data", cols: D_LAB });
+    var out = block("Encoder · calculado uma vez", enc);
+    if (st === 1) return out + block("Decoder", "<p class=\"note\" style=\"margin:0\">Nenhuma palavra gerada ainda. Avance para gerar a primeira.</p>");
+    if (st <= 4) {
+      var t = st - 2, g = generation(t + 1), gen = [QUERY_LABELS[t]], ins = DEC_IN.slice(0, t + 1);
+      var lab = ["<span class=\"w\">gerando</span> " + QUERY_LABELS[t]];
+      var dec = matrix({ key: "z", name: "z (entrada: " + DEC_IN[t] + ")", m: [g.Z[t]], rowLabels: [DEC_IN[t]], edit: "Z", editRow: t, cols: D_LAB }) +
+        matrix({ key: "cache", name: "K<sub>dec</sub> (cache)", m: g.Kdec, rowLabels: ins, cols: D_LAB, hlRows: [t] }) +
+        matrix({ key: "cache", name: "V<sub>dec</sub> (cache)", m: g.Vdec, rowLabels: ins, cols: D_LAB, hlRows: [t] }) +
+        matrix({ key: "aself", name: "a<sub>self</sub>", m: [g.selfA[t].slice(0, t + 1)], rowLabels: lab, rowRole: "gen", rowIds: [t], cols: ins, heat: true, sum: true }) +
+        matrix({ key: "u", name: "u = z + a<sub>self</sub>V<sub>dec</sub>", m: [g.U[t]], rowLabels: lab, rowRole: "gen", rowIds: [t], cols: D_LAB }) +
+        matrix({ key: "q", name: "q = uW<sub>Q</sub>", m: [g.Qc[t]], rowLabels: lab, rowRole: "gen", rowIds: [t], cols: D_LAB }) +
+        matrix({ key: "across", name: "a<sub>cross</sub>", m: [g.crossA[t]], rowLabels: lab, rowRole: "gen", rowIds: [t], cols: rl, heat: true, sum: true }) +
+        matrix({ key: "c", name: "c = a<sub>cross</sub>V<sub>enc</sub>", m: [g.C[t]], rowLabels: lab, rowRole: "gen", rowIds: [t], cols: D_LAB });
+      void gen;
+      return out + block("Decoder · posição " + (t + 1) + ": uma consulta só", dec);
+    }
+    var gl = QUERY_LABELS.map(function (w) { return "<span class=\"w\">gerando</span> " + w; });
+    var train = matrix({ key: "Z", name: "Z (entradas)", m: ex.Z, rowLabels: DEC_IN, edit: "Z", cols: D_LAB }) +
+      matrix({ key: "trainSelf", name: "A<sub>self</sub> (com máscara)", m: R.selfA, rowLabels: gl, rowRole: "gen", cols: DEC_IN, heat: true, sum: true, mask: R.mask }) +
+      matrix({ key: "U", name: "U = Z + A<sub>self</sub>V<sub>dec</sub>", m: R.U, rowLabels: gl, rowRole: "gen", cols: D_LAB }) +
+      matrix({ key: "Qc", name: "Q = UW<sub>Q</sub>", m: R.Qc, rowLabels: gl, rowRole: "gen", cols: D_LAB }) +
+      matrix({ key: "trainCross", name: "A<sub>cross</sub>", m: R.crossA, rowLabels: gl, rowRole: "gen", cols: rl, heat: true, sum: true }) +
+      matrix({ key: "C", name: "C = A<sub>cross</sub>V<sub>enc</sub>", m: R.C, rowLabels: gl, rowRole: "gen", cols: D_LAB });
+    return out + block("Treino · as três posições de uma vez", train);
+  }
+
+  /* ================= Controles e extras por passo ================= */
+  var satCache = {};
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function saturation(D) {
+    if (satCache[D]) return satCache[D];
+    var rnd = mulberry32(42 + D), gauss = function () { return Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd()); };
+    var res = {};
+    [false, true].forEach(function (useScale) {
+      var largest = 0, grad = 0, trials = 100, N = 16;
+      for (var t = 0; t < trials; t++) {
+        var q = [], e = [];
+        for (var d = 0; d < D; d++) q.push(gauss());
+        for (var i = 0; i < N; i++) {
+          var s = 0;
+          for (var d2 = 0; d2 < D; d2++) s += q[d2] * gauss();
+          e.push(useScale ? s / Math.sqrt(D) : s);
+        }
+        var a = softmaxRows([e])[0];
+        largest += Math.max.apply(null, a) / trials;
+        var g = 0;
+        for (var j = 0; j < N; j++) g += Math.abs(a[0] * ((j === 0 ? 1 : 0) - a[j]));
+        grad += g / N / trials;
+      }
+      res[useScale ? "scaled" : "raw"] = { largest: largest, grad: grad };
+    });
+    satCache[D] = res;
+    return res;
+  }
+
+  function control(html) { return "<span>" + html + "</span>"; }
+  function viewToggle() {
+    return "<span class=\"seg\" role=\"group\" aria-label=\"Vista do painel\">" +
+      [["fita", "Palavras"], ["vetores", "Vetores"]].map(function (o) {
+        return "<button type=\"button\" data-view=\"" + o[0] + "\" aria-pressed=\"" + (opt.view === o[0]) + "\">" + o[1] + "</button>";
+      }).join("") + "</span>";
+  }
+  function geoSelect() {
+    return control("<label>Mostrar no gráfico <select data-opt=\"geo\">" +
+      [["X", "dados X"], ["K", "chaves K"], ["V", "valores V"]].map(function (o) { return "<option value=\"" + o[0] + "\"" + (opt.geo === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></label>");
+  }
+
+  function drawControls(n, R) {
+    var c = "", extra = "";
+    if (stageCount(n) > 1) {
+      c += "<button type=\"button\" class=\"btn\" id=\"playBtn\" title=\"Reproduzir as etapas (P)\">" + (state.playing ? "⏸ Parar" : "▶ Reproduzir") + "</button>";
+    }
+    if (n === 3) {
+      c += control("<label>Esticar ×<input type=\"range\" min=\"1\" max=\"5\" step=\"0.5\" value=\"" + opt.stretch + "\" data-opt=\"stretch\"><output>" + opt.stretch + "</output></label>");
+      c += control("<label><input type=\"checkbox\" data-opt=\"scale\"" + (opt.scale ? " checked" : "") + "> dividir por √D</label>");
+      var sat = saturation(opt.D);
+      var Ds = [2, 8, 64, 512, 4096];
+      extra += "<div class=\"note is-new\" style=\"padding:0.6rem\"><strong>E em dimensão maior?</strong> Vetores sorteados com <i>D</i> = " +
+        "<select data-opt=\"D\">" + Ds.map(function (d) { return "<option" + (d === opt.D ? " selected" : "") + ">" + d + "</option>"; }).join("") + "</select>, 16 dados, média de 100 sorteios:" +
+        "<div class=\"stat\"><table><tr><th></th><th>maior peso</th><th>gradiente médio</th></tr>" +
+        "<tr><th>sem escala</th><td>" + sat.raw.largest.toFixed(3) + "</td><td>" + sat.raw.grad.toFixed(5) + "</td></tr>" +
+        "<tr><th>com escala</th><td>" + sat.scaled.largest.toFixed(3) + "</td><td>" + sat.scaled.grad.toFixed(5) + "</td></tr></table></div>" +
+        "Sem a escala, o maior peso tende a 1 e o gradiente a 0 quando <i>D</i> cresce.</div>";
+    }
+    if (n === 5 && state.stage >= 3) c += geoSelect();
+    if (n === 6) {
+      c += viewToggle();
+      if (opt.view === "vetores") c += geoSelect();
+      var best = R.A.map(function (row, i) { var j = argmax(row); return "<b class=\"role-query\">" + QUERY_PLOT[i] + "</b> → <b class=\"role-data\">" + DATA_LABELS[j] + "</b> (" + row[j].toFixed(2) + ")"; });
+      extra += "<p class=\"note\">Maior peso de cada consulta: " + best.join(" · ") + ". <i>Vediamo</i> quer dizer “nós vemos”: o peso se divide entre <i>see</i> (" + fmt(R.A[0][1]) + ") e <i>we</i> (" + fmt(R.A[0][0]) + "), porque a atenção é uma mistura, não a escolha de uma única palavra. Os pesos não foram treinados: as traduções vêm de como o exemplo foi escolhido.</p>";
+    }
+    if (n === 7) {
+      c += viewToggle();
+      c += control("<label>Exemplo <select data-opt=\"example\"><option value=\"traducao\"" + (opt.example === "traducao" ? " selected" : "") + ">we see the sky</option><option value=\"pronome\"" + (opt.example === "pronome" ? " selected" : "") + ">o animal… ele…</option></select></label>");
+    }
+    if (n === 8 || n === 9) {
+      c += "<span class=\"" + (n === 8 ? "is-new" : "") + "\" style=\"padding:0.2rem\"><label><input type=\"checkbox\" data-opt=\"permute\"" + (opt.permute ? " checked" : "") + "> permutar a entrada (the, we, sky, see)</label></span>";
+    }
+    if (n === 9) {
+      c += control("<label><input type=\"checkbox\" data-opt=\"positions\"" + (opt.positions ? " checked" : "") + "> somar a posição P</label>");
+    }
+    if (n === 8 || n === 9) {
+      if (opt.permute) {
+        var same = true;
+        var saved = opt.permute; opt.permute = false; var plain = compute(n); opt.permute = saved;
+        R.order.forEach(function (orig, t) {
+          var o2 = plain.order.indexOf(orig);
+          if (Math.abs(R.Y[t][0] - plain.Y[o2][0]) > 1e-9 || Math.abs(R.Y[t][1] - plain.Y[o2][1]) > 1e-9) same = false;
+        });
+        extra += "<p class=\"note\"><strong>" + (same ? "Mesmos valores" : "Valores diferentes") + "</strong>: comparando a saída de cada palavra com e sem permutação, " +
+          (same ? "cada palavra recebe exatamente a mesma saída, só em outra linha." : "as saídas mudaram, porque a posição de cada palavra mudou.") + "</p>";
+      } else {
+        extra += "<p class=\"note\">Marque “permutar” e compare a saída de cada palavra.</p>";
+      }
+    }
+    if (n === 10) {
+      c += "<span style=\"padding:0.2rem\"><label><input type=\"checkbox\" data-opt=\"mask\"" + (opt.mask ? " checked" : "") + "> máscara causal</label></span>";
+    }
+    if (n === 11) {
+      extra += "<p class=\"note\">Simplificações: as saídas do encoder são os próprios vetores <i>X</i>; o decoder tem uma camada, com os mesmos <i>W<sub>Q</sub></i>, <i>W<sub>K</sub></i> e <i>W<sub>V</sub></i> dos passos anteriores; e a escolha da palavra (projeção para o vocabulário) não é calculada: a sequência gerada é a tradução correta.</p>";
+    }
+    if (n === 12) {
+      c += control("<label>Cabeça no gráfico <select data-opt=\"head\"><option value=\"0\"" + (opt.head === 0 ? " selected" : "") + ">1</option><option value=\"1\"" + (opt.head === 1 ? " selected" : "") + ">2</option></select></label>");
+      extra += "<p class=\"note\">Aqui cada cabeça tem <i>D<sub>H</sub></i> = 2, e as saídas empilhadas têm <i>HD<sub>H</sub></i> = 4 dimensões. <i>W<sub>O</sub></i> faz a média das duas cabeças.</p>";
+    }
+    if (n === 13) {
+      var N = opt.N, Dm = opt.Dm, H = opt.H, DH = Dm / H;
+      var DHs = Number.isInteger(DH) ? DH : DH.toFixed(2);
+      c += control("<label>N <input type=\"number\" min=\"1\" max=\"100000\" value=\"" + N + "\" data-opt=\"N\" style=\"width:6em\"></label>");
+      c += control("<label>D <input type=\"number\" min=\"1\" max=\"16384\" value=\"" + Dm + "\" data-opt=\"Dm\" style=\"width:5em\"></label>");
+      c += control("<label>H <input type=\"number\" min=\"1\" max=\"128\" value=\"" + H + "\" data-opt=\"H\" style=\"width:4em\"></label>");
+      var rows = [
+        ["1. Projeção QKV", "[" + N + " × " + Dm + "] [" + Dm + " × " + 3 * Dm + "] ⇒ [" + N + " × " + 3 * Dm + "]", "separar e reorganizar: Q, K, V com [" + H + " × " + N + " × " + DHs + "]"],
+        ["2. Similaridade QK", "[" + H + " × " + N + " × " + DHs + "] [" + H + " × " + DHs + " × " + N + "] ⇒ [" + H + " × " + N + " × " + N + "]", "softmax em cada linha"],
+        ["3. Ponderação por V", "[" + H + " × " + N + " × " + N + "] [" + H + " × " + N + " × " + DHs + "] ⇒ [" + H + " × " + N + " × " + DHs + "]", "reorganizar: [" + N + " × " + Dm + "]"],
+        ["4. Projeção de saída", "[" + N + " × " + Dm + "] [" + Dm + " × " + Dm + "] ⇒ [" + N + " × " + Dm + "]", ""]
+      ];
+      document.getElementById("mats").innerHTML = "<div class=\"mat is-new\" data-mat=\"shapes\" style=\"width:100%\"><div class=\"mat-name\">As quatro multiplicações <span class=\"is-new-tag\">novo</span></div><div class=\"stat mat-scroll\"><table>" +
+        rows.map(function (r) { return "<tr><th style=\"text-align:left\">" + r[0] + "</th><td style=\"text-align:left;white-space:nowrap\">" + r[1] + "</td><td style=\"text-align:left;font-family:var(--font-body);font-size:0.85rem\">" + r[2] + "</td></tr>"; }).join("") +
+        "</table></div><p class=\"note\">Na prática, cada cabeça tem <i>D<sub>H</sub> = D/H</i>" + (Number.isInteger(DH) ? "" : " — escolha <i>D</i> divisível por <i>H</i>") + ". O exemplo do passo 12 usa <i>D<sub>H</sub></i> = 2 com <i>D</i> = 2, para que cada cabeça caiba no gráfico; as formas acima seguem a regra usual.</p></div>" +
+        document.getElementById("mats").innerHTML;
+    }
+    if (n === 14) {
+      c = "";
+      var mb = opt.memH * opt.memN * opt.memN * opt.bytes;
+      document.getElementById("mats").innerHTML =
+        "<div class=\"mat is-new\" data-mat=\"mem\" style=\"width:100%\"><div class=\"mat-name\">Memória de A = H × N × N × bytes <span class=\"is-new-tag\">novo</span></div>" +
+        "<div class=\"controls\">" +
+        "<label>N <input type=\"number\" min=\"1\" max=\"10000000\" value=\"" + opt.memN + "\" data-opt=\"memN\" style=\"width:8em\"></label>" +
+        "<label>H <input type=\"number\" min=\"1\" max=\"1024\" value=\"" + opt.memH + "\" data-opt=\"memH\" style=\"width:5em\"></label>" +
+        "<label>bytes por número <select data-opt=\"bytes\">" + [2, 4].map(function (b) { return "<option" + (b === opt.bytes ? " selected" : "") + ">" + b + "</option>"; }).join("") + "</select></label></div>" +
+        "<div class=\"big-number\" id=\"memValue\">" + fmtBytes(mb) + "</div>" +
+        "<div class=\"note\">" + opt.memH.toLocaleString("pt-BR") + " × " + opt.memN.toLocaleString("pt-BR") + "² × " + opt.bytes + " = " + mb.toLocaleString("pt-BR") + " bytes. Uma GPU grande tem dezenas de GiB.</div>" +
+        "<div class=\"stat\" style=\"margin-top:0.6rem\"><table><tr><th>N</th><th>memória (H = " + opt.memH + ")</th></tr>" +
+        [1000, 10000, 100000].map(function (nn) { return "<tr><td>" + nn.toLocaleString("pt-BR") + "</td><td>" + fmtBytes(opt.memH * nn * nn * opt.bytes) + "</td></tr>"; }).join("") +
+        "</table></div><p class=\"note\"><strong>Flash Attention</strong> calcula as multiplicações 2 e 3 por blocos, sem guardar a matriz <i>A</i> inteira, o que torna possível usar <i>N</i> grande.</p></div>";
+    }
+    document.getElementById("geoControls").innerHTML = c;
+    document.getElementById("extra").innerHTML = extra;
+  }
+
+  /* ================= Calculando à mão ================= */
+  function handItems(n, R) {
+    var X = ex.data, q = ex.queries;
+    switch (n) {
+      case 2: return [
+        ["Similaridade de <i>q</i> com <i>we</i>: e₁ = " + v2(q[2]) + " · " + v2(X[0]), fmt(R.E[0][0])],
+        ["Peso de <i>sky</i>: a₄ = exp(e₄) / Σ exp(eᵢ)", fmt(R.A[0][3])],
+        ["Saída y = Σ aᵢXᵢ", v2(R.Y[0])]];
+      case 3: return [
+        ["Similaridade com <i>sky</i> sem a escala, com os vetores esticados ×" + opt.stretch, fmt(R.E[0][3] * (opt.scale ? Math.sqrt(2) : 1))],
+        ["A mesma similaridade dividida por √2", fmt(R.E[0][3] / (opt.scale ? 1 : Math.sqrt(2)))]];
+      case 4: return [["Linha de <i>A</i> para <i>q₂</i> (il)", R.A[1].map(fmt).join("; ")]];
+      case 5: return [
+        ["Chave de <i>sky</i>: K₄ = X₄W<sub>K</sub>", v2(R.K[3])],
+        ["Valor de <i>sky</i>: V₄ = X₄W<sub>V</sub>", v2(R.V[3])]];
+      case 7: return opt.example === "pronome" ? [["Peso de <i>ele</i> em <i>animal</i>", fmt(R.A[PRON_ELE][1])]] : [["Linha de <i>A</i> para <i>see</i>", R.A[1].map(fmt).join("; ")]];
+      case 9: return opt.positions ? [["Entrada de <i>" + DATA_LABELS[R.order[1]] + "</i> na posição t = 1: X + (sin 1, cos 1)", v2(R.x[1])]] : [["Entrada na posição 1, sem P", v2(R.x[1])]];
+      case 10: return [["Linha de <i>A</i> para <i>the</i>" + (opt.mask ? " com máscara" : ""), R.A[2].map(fmt).join("; ")]];
+      case 11: return [
+        ["Peso da cross-attention de q₃ (gerando <i>cielo</i>) em <i>sky</i>", fmt(R.crossA[2][3])],
+        ["Linha 2 da self-attention do decoder (gerando <i>il</i>)", R.selfA[1].slice(0, 2).map(fmt).join("; ")]];
+      case 13: return [["Forma de <i>A</i> para N = " + opt.N + " e H = " + opt.H, "[" + opt.H + " × " + opt.N + " × " + opt.N + "]"]];
+      case 14: return [["Memória de A para N = 10.000, H = 12, 2 bytes", fmtBytes(12 * 1e8 * 2)]];
+      default: return null;
+    }
+  }
+  function drawHand(n, R) {
+    var items = handItems(n, R);
+    var box = document.getElementById("hand");
+    if (!items) { box.hidden = true; return; }
+    box.hidden = false;
+    var btn = document.getElementById("revealBtn");
+    btn.setAttribute("aria-pressed", state.revealed ? "true" : "false");
+    document.getElementById("revealLabel").textContent = state.revealed ? "Ocultar resultados" : "Mostrar resultados";
+    document.getElementById("handList").innerHTML = items.map(function (it) {
+      return "<li>" + it[0] + " = " + (state.revealed ? "<span class=\"ans\" data-answer>" + it[1] + "</span>" : "<span class=\"answer-mask block\" data-answer-hidden>?</span>") + "</li>";
+    }).join("");
+  }
+
+  /* ================= Faixa do exemplo (research R9) ================= */
+  var stepSelect = document.getElementById("stepSelect");
+  STEPS.forEach(function (s, i) {
+    if (!s) return;
+    var o = document.createElement("option");
+    o.value = i; o.textContent = i + ". " + s.title;
+    stepSelect.appendChild(o);
+  });
+
+  function contextHTML(n) {
+    function toks(words, role, on) {
+      return words.map(function (w, i) { return "<span class=\"tok " + role + (on.indexOf(i) >= 0 ? " on" : "") + "\">" + w + "</span>"; }).join(" ");
+    }
+    var st = state.stage;
+    if (n >= 14) return "";
+    var pair = function (on) {
+      return "<span class=\"lang\">Inglês (encoder)</span> " + toks(DATA_LABELS, "data", []) +
+        " <span class=\"arrow\">→</span> <span class=\"lang\">Italiano (decoder)</span> " + toks(QUERY_LABELS, "query", on);
+    };
+    if (n === 11) return pair(st >= 2 && st <= 4 ? [st - 2] : st === 5 ? [0, 1, 2] : []);
+    if (n >= 7) {
+      var words = n === 7 && opt.example === "pronome" ? PRON_LABELS : DATA_LABELS;
+      return "<span class=\"lang\">Exemplo</span> " + toks(words, "data", []) +
+        "<p class=\"gloss\">Agora há uma só sequência: cada vetor representa uma palavra e é comparado com todas as outras da mesma frase.</p>";
+    }
+    var on = n === 1 ? [0] : n <= 3 ? [2] : [0, 1, 2];
+    var gloss = n === 1
+      ? "O encoder leu a frase em inglês e guardou um estado <i>hᵢ</i> por palavra. O decoder, no estado <i>s₀</i>, vai gerar a primeira palavra da tradução."
+      : n <= 3
+      ? "A camada aceita qualquer vetor como consulta: embeddings, regiões de uma imagem, saídas de outra camada. Neste exemplo, <i>q</i> faz o papel do estado do decoder ao gerar <i>cielo</i>, e cada <i>Xᵢ</i> o do estado do encoder em uma palavra inglesa."
+      : "No exemplo, <i>q₁</i>, <i>q₂</i> e <i>q₃</i> fazem o papel dos estados do decoder ao gerar <i>vediamo</i>, <i>il</i> e <i>cielo</i>.";
+    return pair(on) + "<p class=\"gloss\">" + gloss + "</p>";
+  }
+
+  /* ================= Exemplos na linguagem (research R15) ================= */
+  // Cada cartão: linhas de palavras (tradução em cima, origem embaixo, quando há duas),
+  // a palavra em foco [linha, índice], as palavras de que ela precisa e, nos cartões do
+  // decoder, a partir de que índice a tradução ainda não foi gerada.
+  function words(s) { return s.split(" "); }
+  var EXAMPLES = {
+    cross: {
+      title: "Cross-attention: a palavra a gerar olha a frase de origem", steps: [6],
+      cards: [
+        { rows: [{ lang: "italiano", w: words("vediamo il cielo") }, { lang: "inglês", w: words("we see the sky") }],
+          focus: [0, 0], clues: [[1, 0], [1, 1]],
+          why: "<i>Vediamo</i> é “(nós) vemos”: a terminação <i>-iamo</i> carrega o <i>we</i>. A palavra a gerar depende de duas palavras de origem." },
+        { rows: [{ lang: "português", w: words("desligue a luz") }, { lang: "inglês", w: words("turn the light off") }],
+          focus: [0, 0], clues: [[1, 0], [1, 3]],
+          why: "Duas palavras separadas em inglês, <i>turn … off</i>, viram um único verbo." },
+        { rows: [{ lang: "português", w: words("o céu azul") }, { lang: "inglês", w: words("the blue sky") }],
+          focus: [0, 2], clues: [[1, 1]],
+          why: "A ordem muda: a terceira palavra em português olha para a segunda em inglês. A atenção não depende da posição." }
+      ] },
+    enc: {
+      title: "Self-attention no encoder: a palavra busca na própria frase o que lhe falta", steps: [7],
+      cards: [
+        { rows: [{ lang: "inglês", w: words("the sky") }], focus: [0, 0], clues: [[0, 1]],
+          tr: "<b>il</b> cielo &nbsp;·&nbsp; compare: the moon → <b>la</b> luna",
+          why: "<i>The</i> não tem gênero; o artigo italiano depende do substantivo." },
+        { rows: [{ lang: "inglês", w: words("I play the piano") }], focus: [0, 1], clues: [[0, 3]],
+          tr: "eu <b>toco</b> piano &nbsp;·&nbsp; compare: I play football → eu <b>jogo</b> futebol",
+          why: "O verbo depende do objeto." },
+        { rows: [{ lang: "inglês", w: words("The animal didn't cross the street because it was tired") }], focus: [0, 7], clues: [[0, 1]],
+          tr: "… porque <b>ele</b> estava cansado",
+          why: "Em português o pronome tem gênero: é preciso saber a quem <i>it</i> se refere." },
+        { rows: [{ lang: "inglês", w: words("The animal didn't cross the street because it was wide") }], focus: [0, 7], clues: [[0, 5]],
+          tr: "… porque <b>ela</b> era larga",
+          why: "Só a última palavra mudou, e com ela a referência de <i>it</i>." },
+        { rows: [{ lang: "inglês", w: words("The keys to the cabinet are here") }], focus: [0, 5], clues: [[0, 1]],
+          tr: "As chaves do armário <b>estão</b> aqui",
+          why: "O verbo concorda com <i>keys</i>, não com a palavra mais próxima." },
+        { rows: [{ lang: "inglês", w: words("She did not see the sky") }], focus: [0, 3], clues: [[0, 1]],
+          tr: "Ela não <b>viu</b> o céu",
+          why: "<i>Did</i> carrega o passado e some na tradução: <i>see</i> precisa dessa informação." },
+        { rows: [{ lang: "inglês", w: words("He sat on the bank of the river") }], focus: [0, 4], clues: [[0, 7]],
+          tr: "Ele sentou na <b>margem</b> do rio",
+          why: "Sem <i>river</i>, <i>bank</i> seria <i>banco</i>." },
+        { rows: [{ lang: "inglês", w: words("the red cars") }], focus: [0, 1], clues: [[0, 2]],
+          tr: "os carros <b>vermelhos</b>",
+          why: "O adjetivo concorda em número e gênero com o substantivo, e ainda muda de posição." }
+      ] },
+    dec: {
+      title: "Self-attention no decoder: a palavra a gerar olha o que já foi gerado", steps: [10, 11],
+      cards: [
+        { rows: [{ lang: "italiano", w: words("il cielo è azzurro") }, { lang: "inglês", w: words("the sky is blue") }],
+          focus: [0, 3], clues: [[0, 1]],
+          why: "<i>Azzurro</i>, e não <i>azzurra</i>: concorda com <i>cielo</i>, que já foi gerado." },
+        { rows: [{ lang: "italiano", w: words("la luna è bella") }, { lang: "inglês", w: words("the moon is beautiful") }],
+          focus: [0, 3], clues: [[0, 1]],
+          why: "<i>Bella</i> concorda com <i>luna</i>." },
+        { rows: [{ lang: "italiano", w: words("il cielo") }, { lang: "inglês", w: words("the sky") }],
+          focus: [0, 0], clues: [[1, 0], [1, 1]], future: 1,
+          why: "Ao gerar <i>il</i>, o decoder ainda não vê <i>cielo</i> (máscara). A informação vem da origem: graças à self-attention do encoder, <i>the</i> já carrega o gênero de <i>sky</i>." }
+      ] }
+  };
+  var EX_ORDER = ["cross", "enc", "dec"];
+  var exState = { open: false, groups: [], revealed: [] };
+
+  function exGroupFor(n) {
+    for (var k = 0; k < EX_ORDER.length; k++) if (EXAMPLES[EX_ORDER[k]].steps.indexOf(n) >= 0) return EX_ORDER[k];
+    return null;
+  }
+  function exCards() {
+    var all = [];
+    exState.groups.forEach(function (g) { EXAMPLES[g].cards.forEach(function (c, i) { all.push({ g: g, i: i, c: c }); }); });
+    return all;
+  }
+  function openExamples(all) {
+    stopPlay();
+    var g = exGroupFor(state.step);
+    exState.groups = all || !g ? EX_ORDER.slice() : [g];
+    exState.revealed = exCards().map(function () { return false; });
+    exState.open = true;
+    renderExamples();
+    var panel = document.getElementById("examples");
+    panel.hidden = false;
+    document.getElementById("exBackdrop").hidden = false;
+    document.getElementById("exClose").focus();
+  }
+  function closeExamples() {
+    if (!exState.open) return;
+    exState.open = false;
+    document.getElementById("examples").hidden = true;
+    document.getElementById("exBackdrop").hidden = true;
+    var b = document.getElementById("exBtn");
+    if (b) b.focus();
+  }
+  function exReveal(k, on) { exState.revealed[k] = on; renderExamples(); }
+  function exNext() {
+    var k = exState.revealed.indexOf(false);
+    if (k < 0) { closeExamples(); return; }
+    exReveal(k, true);
+    var card = document.querySelector("#exCards [data-card=\"" + k + "\"]");
+    if (card && card.scrollIntoView) card.scrollIntoView({ block: "nearest" });
+  }
+  function exPrev() {
+    var k = exState.revealed.lastIndexOf(true);
+    if (k < 0) { closeExamples(); return; }
+    exReveal(k, false);
+  }
+
+  function renderExamples() {
+    var cards = exCards(), out = "", lastGroup = null;
+    cards.forEach(function (it, k) {
+      if (it.g !== lastGroup) { out += "<h3 class=\"ex-group\">" + EXAMPLES[it.g].title + "</h3>"; lastGroup = it.g; }
+      var c = it.c, open = exState.revealed[k];
+      var fw = c.rows[c.focus[0]].w[c.focus[1]];
+      out += "<article class=\"ex-card" + (open ? " open" : "") + "\" data-card=\"" + k + "\">";
+      out += "<p class=\"ex-q\">" + (c.rows.length > 1 ? "Para gerar" : "Para traduzir") + " <b>" + fw + "</b>, de qual palavra ela precisa?</p>";
+      out += "<div class=\"ex-sent" + (c.rows.length > 1 ? " two" : "") + "\">";
+      c.rows.forEach(function (row, r) {
+        out += "<div class=\"ex-row\"><span class=\"ex-lang\">" + row.lang + "</span>";
+        row.w.forEach(function (w, i) {
+          var cls = "ex-tok";
+          if (r === c.focus[0] && i === c.focus[1]) cls += " focus";
+          if (open && c.clues.some(function (q) { return q[0] === r && q[1] === i; })) cls += " clue";
+          if (c.future != null && r === 0 && i >= c.future) cls += " future";
+          out += "<span class=\"" + cls + "\" data-r=\"" + r + "\" data-i=\"" + i + "\">" + w + "</span>";
+        });
+        out += "</div>";
+      });
+      out += "<svg class=\"ex-arrows\" aria-hidden=\"true\"></svg></div>";
+      if (open) {
+        if (c.tr) out += "<p class=\"ex-tr\">" + c.tr + "</p>";
+        out += "<p class=\"ex-why\">" + c.why + "</p>";
+      }
+      out += "<button type=\"button\" class=\"reveal-toggle ex-toggle\" data-ex=\"" + k + "\" aria-pressed=\"" + open + "\">" + (open ? "Ocultar" : "Revelar") + "</button>";
+      out += "</article>";
+    });
+    document.getElementById("exCards").innerHTML = out;
+    var n = exState.revealed.filter(Boolean).length;
+    document.getElementById("exCount").textContent = n + " de " + cards.length + " revelados";
+    drawExampleArrows();
+  }
+
+  function drawExampleArrows() {
+    var cards = exCards();
+    document.querySelectorAll("#exCards .ex-card").forEach(function (el) {
+      var k = +el.getAttribute("data-card"), c = cards[k].c;
+      var svgEl = el.querySelector(".ex-arrows");
+      svgEl.innerHTML = "";
+      if (!exState.revealed[k]) return;
+      var box = el.querySelector(".ex-sent").getBoundingClientRect();
+      if (!box.width) return;
+      svgEl.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+      svgEl.setAttribute("width", box.width); svgEl.setAttribute("height", box.height);
+      function tok(r, i) { return el.querySelector(".ex-tok[data-r=\"" + r + "\"][data-i=\"" + i + "\"]").getBoundingClientRect(); }
+      var f = tok(c.focus[0], c.focus[1]);
+      c.clues.forEach(function (q) {
+        var t = tok(q[0], q[1]);
+        var fx = f.left + f.width / 2 - box.left, tx = t.left + t.width / 2 - box.left, d;
+        if (Math.abs(f.top - t.top) < 4) {
+          var y = f.top - box.top - 2, h = 14 + Math.min(30, Math.abs(fx - tx) * 0.2);
+          d = "M " + fx + " " + y + " Q " + (fx + tx) / 2 + " " + (y - 2 * h) + " " + tx + " " + y;
+        } else {
+          var down = t.top > f.top;
+          var y1 = (down ? f.bottom : f.top) - box.top, y2 = (down ? t.top : t.bottom) - box.top, my = (y1 + y2) / 2;
+          d = "M " + fx + " " + y1 + " C " + fx + " " + my + " " + tx + " " + my + " " + tx + " " + y2;
+        }
+        svgEl.appendChild(node("path", { d: d, "class": "ex-arrow", "marker-end": "url(#exHead)" }));
+      });
+    });
+  }
+  window.addEventListener("resize", function () { if (exState.open) drawExampleArrows(); });
+
+  document.getElementById("exClose").addEventListener("click", closeExamples);
+  document.getElementById("exBackdrop").addEventListener("click", closeExamples);
+  document.getElementById("exAll").addEventListener("click", function () {
+    exState.revealed = exState.revealed.map(function () { return true; }); renderExamples();
+  });
+  document.getElementById("exCards").addEventListener("click", function (evt) {
+    var b = evt.target.closest && evt.target.closest("[data-ex]");
+    if (b) { var k = +b.getAttribute("data-ex"); exReveal(k, !exState.revealed[k]); }
+  });
+
+  /* ================= Render ================= */
+  function setHTML(id, html) { var el = document.getElementById(id); if (el.innerHTML !== html) el.innerHTML = html; }
+
+  function render(stepChanged) {
+    var n = state.step, S = STEPS[n];
+    var count = stageCount(n);
+    if (state.stage > count) state.stage = count;
+    if (state.stage < 1) state.stage = 1;
+    var R = compute(n);
+    newKeys = stageNew(n);
+    if (stepChanged !== false) {
+      document.getElementById("stepMeta").textContent = "Passo " + n + " de " + TOTAL + " · " + (S.slides === "complemento" ? "complemento" : "slides " + S.slides);
+      document.getElementById("stepTitle").textContent = S.title;
+      document.getElementById("stepText").innerHTML = S.text;
+      var exBtn = exGroupFor(n) ? "<button type=\"button\" class=\"btn ex-btn\" id=\"exBtn\" title=\"Exemplos na linguagem (L)\">Exemplos na linguagem</button>" : "";
+      var note = S.note ? "<details class=\"more\"><summary>" + S.note.q + "</summary><div>" + S.note.a + "</div></details>" : "";
+      document.getElementById("noteBox").innerHTML = exBtn || note ? "<div class=\"note-row\">" + note + exBtn + "</div>" : "";
+      stepSelect.value = String(n);
+    }
+    setHTML("context", contextHTML(n));
+    setHTML("stageCaption", stageCaption(n, R));
+    document.getElementById("counter").textContent = n + " de " + TOTAL;
+    var sc = document.getElementById("stageCounter");
+    sc.textContent = count > 1 ? "etapa " + state.stage + " de " + count : "";
+    sc.hidden = count <= 1;
+    document.getElementById("prevBtn").disabled = n === 1 && state.stage === 1;
+    document.getElementById("nextBtn").disabled = n === TOTAL && state.stage === count;
+    drawPlot(n, R);
+    var active = document.activeElement;
+    var activeKey = active && active.getAttribute && active.getAttribute("data-edit");
+    var activeOpt = active && active.getAttribute && active.getAttribute("data-opt");
+    drawMatrices(n, R);
+    drawControls(n, R);
+    drawHand(n, R);
+    if (activeKey) { var a2 = document.querySelector("[data-edit=\"" + activeKey + "\"]"); if (a2) a2.focus(); }
+    if (activeOpt) { var o2 = document.querySelector("[data-opt=\"" + activeOpt + "\"]"); if (o2) o2.focus(); }
+  }
+
+  /* ---------- navegação por passos e etapas (data-model, "Etapa") ---------- */
+  function goTo(n, stage) {
+    n = Math.max(1, Math.min(TOTAL, n | 0));
+    if (exState.open) closeExamples();
+    if (n !== state.step) { state.revealed = false; state.highlight = null; }
+    stopPlay();
+    state.step = n;
+    var count = stageCount(n);
+    state.stage = stage == null ? count : Math.max(1, Math.min(count, stage | 0));
+    if (location.hash !== "#passo-" + n) history.pushState(null, "", "#passo-" + n);
+    render(true);
+  }
+  function next() {
+    stopPlay();
+    if (state.stage < stageCount(state.step)) { state.stage++; render(false); }
+    else if (state.step < TOTAL) goTo(state.step + 1, 1);
+  }
+  function prev() {
+    stopPlay();
+    if (state.stage > 1) { state.stage--; render(false); }
+    else if (state.step > 1) goTo(state.step - 1);
+  }
+  function fromHash() {
+    if (location.hash === "#exemplos") {
+      if (!state.step) { state.step = 1; state.stage = stageCount(1); render(true); }
+      openExamples(true);
+      return;
+    }
+    var m = /^#passo-(\d+)$/.exec(location.hash);
+    var n = m ? +m[1] : 1;
+    if (!(n >= 1 && n <= TOTAL)) n = 1;
+    if (n === state.step) return;
+    state.revealed = false; state.highlight = null;
+    stopPlay();
+    state.step = n;
+    state.stage = stageCount(n);
+    render(true);
+  }
+
+  /* ---------- reproduzir (research R3) ---------- */
+  function stopPlay() { if (playTimer) clearInterval(playTimer); playTimer = null; state.playing = false; }
+  function togglePlay() {
+    if (state.playing) { stopPlay(); render(false); return; }
+    var count = stageCount(state.step);
+    if (count < 2) return;
+    if (state.stage >= count) state.stage = 1;
+    state.playing = true;
+    render(false);
+    playTimer = setInterval(function () {
+      if (state.stage < stageCount(state.step)) state.stage++;
+      if (state.stage >= stageCount(state.step)) stopPlay();
+      render(false);
+    }, PLAY_MS);
+  }
+
+  /* ---------- modo aula (research R10) ---------- */
+  function setLecture(on) { document.documentElement.classList.toggle("lecture", on); }
+  function toggleFull() {
+    var on = !document.documentElement.classList.contains("lecture");
+    setLecture(on);
+    try {
+      var p = null;
+      if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) p = document.documentElement.requestFullscreen();
+      if (!on && document.fullscreenElement) p = document.exitFullscreen();
+      if (p && p.catch) p.catch(function () { /* tela cheia indisponível: fica só o modo aula */ });
+    } catch (e) { /* idem */ }
+  }
+  document.addEventListener("fullscreenchange", function () {
+    // os eventos chegam com atraso: só desligam o modo aula ao sair da tela cheia,
+    // e uma entrada que chega depois de o professor desligar o modo aula é desfeita
+    var lecture = document.documentElement.classList.contains("lecture");
+    if (!document.fullscreenElement) setLecture(false);
+    else if (!lecture) { var p = document.exitFullscreen(); if (p && p.catch) p.catch(function () {}); }
+  });
+
+  /* ---------- eventos ---------- */
+  document.getElementById("prevBtn").addEventListener("click", prev);
+  document.getElementById("nextBtn").addEventListener("click", next);
+  stepSelect.addEventListener("change", function () { goTo(+stepSelect.value); });
+  document.getElementById("resetBtn").addEventListener("click", reset);
+  document.getElementById("revealBtn").addEventListener("click", function () { state.revealed = !state.revealed; render(false); });
+  document.getElementById("fullBtn").addEventListener("click", toggleFull);
+  window.addEventListener("popstate", fromHash);
+  window.addEventListener("hashchange", fromHash);
+
+  function reset() {
+    var wasPron = opt.example === "pronome";
+    ex = clone(ORIGINAL);
+    var keep = { D: opt.D, view: opt.view };
+    opt = defaultOptions(); opt.D = keep.D; opt.view = keep.view;
+    stopPlay();
+    if (wasPron) state.stage = stageCount(state.step);
+    render(false);
+  }
+
+  document.addEventListener("keydown", function (evt) {
+    var t = evt.target, tag = t && t.tagName;
+    var typing = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+    if (typing || evt.altKey || evt.ctrlKey || evt.metaKey) return;
+    if (exState.open) {
+      var onBtn = tag === "BUTTON";
+      switch (evt.key) {
+        case "Escape": case "l": case "L": closeExamples(); break;
+        case "ArrowRight": case "PageDown": case "ArrowDown": exNext(); break;
+        case " ": if (onBtn) return; exNext(); break;
+        case "ArrowLeft": case "PageUp": case "ArrowUp": exPrev(); break;
+        default: return;
+      }
+      evt.preventDefault();
+      return;
+    }
+    if (state.playing) {
+      if (evt.key === "Shift") return;
+      stopPlay(); render(false); evt.preventDefault(); return;
+    }
+    if (evt.shiftKey && t && t.getAttribute && t.getAttribute("data-drag")) return;
+    var onControl = tag === "BUTTON" || tag === "SUMMARY" || tag === "A";
+    switch (evt.key) {
+      case "ArrowRight": if (evt.shiftKey) goTo(state.step + 1); else next(); break;
+      case "ArrowLeft": if (evt.shiftKey) goTo(state.step - 1); else prev(); break;
+      case "PageDown": case "ArrowDown": next(); break;
+      case "PageUp": case "ArrowUp": prev(); break;
+      case " ": if (onControl) return; next(); break;
+      case "Home": goTo(1); break;
+      case "End": goTo(TOTAL); break;
+      case "f": case "F": toggleFull(); break;
+      case "r": case "R": reset(); break;
+      case "p": case "P": togglePlay(); break;
+      case "l": case "L": openExamples(false); break;
+      default: return;
+    }
+    evt.preventDefault();
+  });
+
+  document.addEventListener("click", function (evt) {
+    var el = evt.target && evt.target.closest ? evt.target : null;
+    if (el && el.closest("#playBtn")) { togglePlay(); return; }
+    if (el && el.closest("#exBtn")) { openExamples(false); return; }
+    if (state.playing) { stopPlay(); render(false); }
+    var v = el && el.closest("[data-view]");
+    if (v) setOption("view", v.getAttribute("data-view"));
+  });
+
+  function setOption(name, value) {
+    if (["permute", "positions", "mask", "scale"].indexOf(name) >= 0) opt[name] = !!value;
+    else if (name === "geo" || name === "view") opt[name] = String(value);
+    else if (name === "example") { opt.example = value === "pronome" ? "pronome" : "traducao"; state.highlight = null; }
+    else {
+      var v = +value;
+      if (!isFinite(v)) return;
+      if (name === "head") v = v ? 1 : 0;
+      if (name === "N" || name === "memN") v = Math.max(1, Math.min(name === "N" ? 100000 : 10000000, Math.round(v)));
+      if (name === "Dm") v = Math.max(1, Math.min(16384, Math.round(v)));
+      if (name === "H" || name === "memH") v = Math.max(1, Math.min(1024, Math.round(v)));
+      if (name === "stretch") v = Math.max(1, Math.min(5, v));
+      opt[name] = v;
+    }
+    stopPlay();
+    if (name === "example" || name === "mask") state.stage = stageCount(state.step);
+    render(false);
+  }
+
+  document.addEventListener("change", function (evt) {
+    var t = evt.target;
+    var o = t.getAttribute && t.getAttribute("data-opt");
+    if (o) { setOption(o, t.type === "checkbox" ? t.checked : t.value); return; }
+    var e = t.getAttribute && t.getAttribute("data-edit");
+    if (e) {
+      var p = e.split(":"), v = Math.max(-LIMIT, Math.min(LIMIT, +t.value || 0));
+      v = Math.round(v * 10) / 10;
+      if (p[0] === "data") ex.data[+p[1]][+p[2]] = v;
+      else if (p[0] === "queries") ex.queries[+p[1]][+p[2]] = v;
+      else if (p[0] === "query2") ex.queries[2][+p[2]] = v;
+      else if (p[0] === "s0") ex.s0[+p[2]] = v;
+      else ex[p[0]][+p[1]][+p[2]] = v;
+      render(false);
+    }
+  });
+  document.addEventListener("input", function (evt) {
+    var t = evt.target;
+    if (t.type === "range" && t.getAttribute("data-opt")) setOption(t.getAttribute("data-opt"), t.value);
+  });
+
+  function hoverTarget(evt) {
+    var el = evt.target && evt.target.closest && evt.target.closest("[data-role][data-i]");
+    var h = el ? { role: el.getAttribute("data-role"), i: +el.getAttribute("data-i") } : null;
+    if (dragging) return;
+    var cur = state.highlight;
+    if ((h && cur && h.role === cur.role && h.i === cur.i) || (!h && !cur)) return;
+    state.highlight = h;
+    render(false);
+  }
+  ["mouseover", "focusin"].forEach(function (ev) {
+    document.getElementById("geoPanel").addEventListener(ev, hoverTarget);
+    document.getElementById("matPanel").addEventListener(ev, hoverTarget);
+  });
+  ["geoPanel", "matPanel"].forEach(function (id) {
+    document.getElementById(id).addEventListener("mouseleave", function () { if (!dragging && state.highlight) { state.highlight = null; render(false); } });
+  });
+
+  /* ================= Interface de teste (contracts/ui-contract.md) ================= */
+  function noInf(m) { return m.map(function (r) { return r.map(function (x) { return x === -Infinity ? null : x; }); }); }
+  window.attentionDemo = {
+    goTo: goTo,
+    next: next,
+    prev: prev,
+    state: function () {
+      return { step: state.step, stage: state.stage, stageCount: stageCount(state.step), playing: state.playing,
+               lecture: document.documentElement.classList.contains("lecture"), exampleName: opt.example, view: opt.view,
+               highlight: state.highlight, head: opt.head, example: clone(ex), options: clone(opt),
+               examples: { open: exState.open, cards: exState.open ? exCards().length : 0, revealed: exState.revealed.filter(Boolean).length } };
+    },
+    results: function () {
+      var R = compute(state.step);
+      var out = {};
+      ["E", "A", "Y", "K", "V", "A2", "memoryBytes", "Kenc", "Venc", "Z", "Kdec", "Vdec", "selfA", "U", "Qc", "crossA", "C"].forEach(function (k) { if (R[k] !== undefined) out[k] = R[k]; });
+      if (R.E) out.E = noInf(R.E);
+      if (R.selfE) out.selfE = noInf(R.selfE);
+      out.order = R.order;
+      return out;
+    },
+    openExamples: function (all) { openExamples(!!all); },
+    closeExamples: closeExamples,
+    generate: function (t) { var g = generation(t); return { selfA: g.selfA, crossA: g.crossA, C: g.C }; },
+    setVector: function (role, i, v) {
+      v = clampV(v);
+      if (role === "data") ex.data[i] = v;
+      else if (role === "query") ex.queries[i] = v;
+      else if (role === "s0") ex.s0 = v;
+      else if (role === "pron") ex.pron[i] = v;
+      else if (role === "Z") ex.Z[i] = v;
+      render(false);
+    },
+    setOption: setOption,
+    reset: reset,
+    highlight: function (role, i) { state.highlight = role ? { role: role, i: i } : null; render(false); }
+  };
+
+  fromHash();
+})();
+
+</script>
+</body>
+</html>
