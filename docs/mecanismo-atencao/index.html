@@ -509,6 +509,14 @@
   html.lecture { font-size: 115%; }
   html.lecture .masthead, html.lecture #hand, html.lecture .foot, html.lecture details.refs { display: none !important; }
   html.lecture main.app { max-width: none; }
+  /* passo 2: a caixa preta */
+  .plot .cell { stroke: none; }
+  .plot .cell.data { fill: color-mix(in srgb, var(--data) 70%, transparent); }
+  .plot .cell.query { fill: color-mix(in srgb, var(--query) 70%, transparent); }
+  .plot .cell.output { fill: color-mix(in srgb, var(--output) 70%, transparent); }
+  .plot .blackbox { fill: var(--ink); }
+  .plot .blackbox-label { fill: var(--surface); font-family: var(--font-body); font-size: 20px; font-weight: 700; }
+  .ex-warn { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -549,7 +557,7 @@
     </div>
     <nav class="nav" aria-label="Passos">
       <button class="btn" id="prevBtn" type="button" aria-label="Passo anterior">← Anterior</button>
-      <span class="counter" id="counter" aria-live="polite">1 de 14</span>
+      <span class="counter" id="counter" aria-live="polite">1 de 15</span>
       <span class="stage-counter" id="stageCounter" hidden></span>
       <button class="btn primary" id="nextBtn" type="button" aria-label="Próximo passo">Próximo →</button>
       <label class="sr-only" for="stepSelect" style="position:absolute;left:-9999px">Ir para o passo</label>
@@ -636,9 +644,11 @@
     WK: [[0.8, -0.4], [0.2, 1.0]],
     WV: [[1.0, 0.0], [0.0, 0.5]],
     WQ: [[1.0, 0.2], [-0.2, 1.0]],
-    // entradas do decoder no passo 11: ⟨início⟩, vediamo, il
+    // entradas do decoder no passo 12: ⟨início⟩, vediamo, il
     Z: [[0.7, 0.2], [-0.7, 0.2], [-0.4, -0.6]],
-    // frase do pronome no passo 7
+    // frase do pronome no passo 8
+    // passo 0 (research R2 da spec 005): x e as colunas de W arrastáveis; X editável
+    alg: { x: [1, 2], cols: [[2, 1], [1, -1], [0, 1]], u: [1, 2], v: [3, 1, -1], X: [[1, 2], [0, 1], [-1, 1]] },
     pron: [[0.2, 0.1], [-1.5, 1.5], [-0.3, 0.2], [0.2, -0.7], [0.1, 0.2], [-0.6, -1.0], [-0.2, 0.3], [-0.5, 1.0], [0.3, -0.2], [0.6, 0.6]]
   };
   var DATA_LABELS = ["we", "see", "the", "sky"];
@@ -649,22 +659,30 @@
   var SUB = "₁₂₃₄₅₆₇₈₉";
   var QUERY_NAMES = QUERY_LABELS.map(function (w, i) { return "q" + SUB[i] + " <span class=\"w\">" + w + "</span>"; });
   var QUERY_PLOT = QUERY_LABELS.map(function (w, i) { return "q" + SUB[i] + " " + w; });
-  var HEAD2 = { WQ: [[0.0, 1.0], [1.0, 0.0]], WK: [[1.0, 0.0], [0.0, -1.0]], WV: [[0.5, 0.0], [0.0, 1.0]] };
-  var WO = [[0.5, 0.0], [0.0, 0.5], [0.5, 0.0], [0.0, 0.5]];
+  // passo 13 (research R8 da spec 005): D = 4, duas cabeças de D_H = 2; fixos, sem arrasto
+  var MH = {
+    X: [[1.0, 0.2, 0.0, -0.5], [0.2, 1.0, 0.0, 1.0], [-0.8, 0.3, 0.5, 0.5], [0.6, -0.9, 0.5, 0.5]],
+    WQ: [[0.5, -1, -0.5, -1], [0.5, 1, -1, 0.5], [-0.5, -0.5, 0, -0.5], [0, 1, -0.5, 1]],
+    WK: [[1, -1, -1, 0.5], [-0.5, -1, 0.5, 0.5], [0, 0.5, 0.5, -1], [1, 0, 0, 0.5]],
+    WV: [[0, -0.5, -0.5, -1], [-1, 1, -1, 0.5], [-0.5, -0.5, -0.5, -0.5], [0.5, 0.5, -0.5, -0.5]],
+    WO: [[0.5, 0, 0.5, 0], [0, 0.5, 0, 0.5], [0.5, 0, -0.5, 0], [0, 0.5, 0, -0.5]]
+  };
+  var ALG_MAX = 4, ALG_NEW = [1, 1];
   var PERM = [2, 0, 3, 1];
   var LIMIT = 3;
-  var TOTAL = 14;
+  var TOTAL = 15;
   var PLAY_MS = 1200;
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   var ex = clone(ORIGINAL);
   var opt = defaultOptions();
-  var state = { step: 0, stage: 1, highlight: null, revealed: false, playing: false };
+  var state = { step: -1, stage: 1, highlight: null, revealed: false, playing: false };
   var playTimer = null;
 
   function defaultOptions() {
     return { stretch: 1, scale: true, D: 64, permute: false, positions: true, mask: true, head: 0, geo: "X",
-             N: 4, Dm: 2, H: 2, memN: 100000, memH: 64, bytes: 2, example: "traducao", view: "fita" };
+             N: 4, Dm: 4, H: 2, memN: 100000, memH: 64, bytes: 2, example: "traducao", view: "fita",
+             boxType: "self", boxN: 4, boxNQ: 3, boxNX: 4, boxDin: 2, boxDout: 2 };
   }
 
   /* ================= Álgebra ================= */
@@ -721,32 +739,40 @@
     return s.replace("-", "−");
   }
   function v2(v) { return "(" + fmt(v[0]) + "; " + fmt(v[1]) + ")"; }
+  // números do passo 0: sem zeros à direita (4, −1, 0.5)
+  function num(x) { var r = Math.round(x * 100) / 100; return (Math.abs(r) < 0.005 ? "0" : String(r)).replace("-", "−"); }
+  function vn(v) { return "(" + v.map(num).join("; ") + ")"; }
   function clampV(v) { return v.map(function (c) { return Math.max(-LIMIT, Math.min(LIMIT, c)); }); }
   function range(n) { var r = []; for (var i = 0; i < n; i++) r.push(i); return r; }
 
   /* ================= Passos (contracts/steps.md) ================= */
   var STEPS = [
-    null,
+    { title: "Revisão: matrizes fazem várias combinações de uma vez", slides: "revisão", isNew: [],
+      text: "Uma matriz guarda várias combinações dos números de um vetor, uma por coluna. Multiplicar o vetor pela matriz calcula todas de uma vez: cada resultado é o produto escalar do vetor com uma coluna. É só isso que a atenção faz com <i>Q</i>, <i>K</i> e <i>V</i>, muitas vezes." },
     { title: "Um operador escondido na atenção da RNN", slides: "28-29", isNew: ["h", "e", "a", "c"],
       text: "Na tradução com RNN, o estado do decoder <b class=\"role-query\">s₀</b> compara-se com cada estado do encoder <b class=\"role-data\">hᵢ</b>, as comparações viram pesos <i>a</i> que somam 1, e o vetor de contexto <b class=\"role-output\">c</b> é a mistura dos <i>hᵢ</i> com esses pesos. Aqui, a comparação <i>f<sub>att</sub></i> é uma pequena rede aprendida. Os próximos passos transformam esse operador numa camada independente da RNN: <b>consultas</b> (aqui, <i>s₀</i>) que olham para <b>dados</b> (aqui, os <i>hᵢ</i>)." },
+    { title: "O que entra e o que sai", slides: "30", isNew: ["box"],
+      text: "Antes de abrir a caixa: a camada de atenção recebe uma sequência de vetores e devolve outra. A saída tem um vetor por consulta: na self-attention, as consultas são a própria entrada, e o comprimento se mantém; na cross-attention, ele é o da sequência de consultas. A dimensão dos vetores de saída pode ser diferente da de entrada; na prática, costuma ser a mesma." },
     { title: "Uma consulta, vários dados", slides: "30-35", isNew: ["e", "a", "y"],
       text: "A comparação passa a ser o produto escalar <span class=\"formula\"><i>eᵢ = q · Xᵢ</i></span>: quanto mais alinhados a consulta e o dado, maior a similaridade. O softmax transforma as similaridades em pesos positivos que somam 1, e a saída <b class=\"role-output\">y = Σ aᵢXᵢ</b> é a média dos dados ponderada por esses pesos. Gire a consulta <b class=\"role-query\">q</b> na direção de um dado e o peso dele cresce; o tamanho dos vetores também conta, como na demonstração de produto escalar." },
     { title: "Dividir por √D", slides: "36-38", isNew: ["e", "sat"],
       text: "Vetores mais longos, ou de dimensão maior, produzem produtos escalares maiores, e o softmax satura: quase todo o peso vai para um só vetor, e o gradiente que treina a rede some. Dividir por <span class=\"formula\"><i>√D</i></span> mantém as similaridades numa faixa estável. Estique os vetores e compare com e sem a escala." },
     { title: "Várias consultas de uma vez", slides: "39", isNew: ["Q", "E", "A", "Y"],
-      text: "Empilhamos as consultas numa matriz <i>Q</i> e fazemos o passo 2 para todas numa só multiplicação: <span class=\"formula\"><i>E = QXᵀ/√D</i>, <i>A = softmax(E)</i>, <i>Y = AX</i></span>. Cada linha de <i>A</i> é a distribuição de pesos de uma consulta e soma 1. Passe o mouse sobre uma consulta.",
+      text: "Empilhamos as consultas numa matriz <i>Q</i> e fazemos o passo 3 para todas numa só multiplicação: <span class=\"formula\"><i>E = QXᵀ/√D</i>, <i>A = softmax(E)</i>, <i>Y = AX</i></span>. Cada linha de <i>A</i> é a distribuição de pesos de uma consulta e soma 1. Passe o mouse sobre uma consulta.",
       note: { q: "A ordem das consultas importa?",
-              a: "Não. Cada linha de <i>A</i> e de <i>Y</i> depende só da sua consulta e de <i>X</i>: trocar a ordem das consultas só troca a ordem das linhas. Os índices q₁, q₂, q₃ só numeram as linhas. Empilhar é uma forma de fazer várias contas do passo 2 numa só multiplicação, e não diz nada sobre a ordem em que as palavras são geradas (ver o passo 11)." } },
+              a: "Não. Cada linha de <i>A</i> e de <i>Y</i> depende só da sua consulta e de <i>X</i>: trocar a ordem das consultas só troca a ordem das linhas. Os índices q₁, q₂, q₃ só numeram as linhas. Empilhar é uma forma de fazer várias contas do passo 3 numa só multiplicação, e não diz nada sobre a ordem em que as palavras são geradas (ver o passo 12)." } },
     { title: "Chaves e valores", slides: "40-45", isNew: ["WK", "WV", "K", "V"],
       text: "Os dados tinham dois papéis: ser comparados com a consulta e ser misturados na saída. Agora cada papel ganha uma versão aprendida: as <b>chaves</b> <span class=\"formula\"><i>K = XW<sub>K</sub></i></span> são comparadas, e os <b>valores</b> <span class=\"formula\"><i>V = XW<sub>V</sub></i></span> são misturados: <span class=\"formula\"><i>Y = AV</i></span>.",
-      note: { q: "De onde vêm W<sub>K</sub> e W<sub>V</sub>?",
-              a: "São aprendidas no treino, com o resto da rede: o erro da tarefa volta por backpropagation e ajusta W<sub>Q</sub>, W<sub>K</sub> e W<sub>V</sub>. O que se aprende não são os pesos de atenção, recalculados para cada frase, e sim a regra que os gera: o que conta como parecido e o que cada palavra passa adiante. Nada obriga a atenção a ser interpretável; ela fica como for mais útil para a tarefa. Nesta página, os valores foram escolhidos à mão." } },
+      note: [{ q: "De onde vêm W<sub>K</sub> e W<sub>V</sub>?",
+              a: "São aprendidas no treino, com o resto da rede: o erro da tarefa volta por backpropagation e ajusta W<sub>Q</sub>, W<sub>K</sub> e W<sub>V</sub>. O que se aprende não são os pesos de atenção, recalculados para cada frase, e sim a regra que os gera: o que conta como parecido e o que cada palavra passa adiante. Nada obriga a atenção a ser interpretável; ela fica como for mais útil para a tarefa. Nesta página, os valores foram escolhidos à mão." },
+             { q: "Por que três matrizes, e não comparar os próprios vetores?",
+               a: "Numa busca, o que você digita (a consulta), o que descreve cada item (a chave: o título e as tags) e o que você leva (o valor: o conteúdo) são coisas diferentes. Comparar os próprios vetores obrigaria um mesmo vetor a fazer os três papéis. Com W<sub>Q</sub>, W<sub>K</sub> e W<sub>V</sub>, a rede aprende uma representação para cada papel: o que se pergunta é diferente do que se recupera." }] },
     { title: "Cross-attention: duas sequências", slides: "46", isNew: ["tape"],
       text: "Na <b>cross-attention</b>, as consultas vêm de uma sequência e as chaves e os valores de outra: aqui, as consultas vêm da tradução em italiano, e as chaves e os valores, da frase em inglês. As duas sequências podem ter tamanhos diferentes (3 consultas, 4 dados), e há uma saída para cada consulta. É assim que o decoder de um tradutor consulta a frase de origem.",
       note: { q: "E na hora de gerar a tradução?",
-              a: "Na geração, o decoder produz uma palavra por vez, então a cross-attention recebe uma consulta por vez. As chaves e os valores, que vêm da frase de origem, ficam fixos e são calculados uma vez. Ter as três consultas juntas, como aqui, acontece no treino, quando a tradução inteira é conhecida. O passo 11 mostra as duas situações." } },
+              a: "Na geração, o decoder produz uma palavra por vez, então a cross-attention recebe uma consulta por vez. As chaves e os valores, que vêm da frase de origem, ficam fixos e são calculados uma vez. Ter as três consultas juntas, como aqui, acontece no treino, quando a tradução inteira é conhecida. O passo 12 mostra as duas situações." } },
     { title: "Self-attention", slides: "47-51", isNew: ["WQ", "Qs", "A"],
-      text: "Na <b>self-attention</b> não há consultas de fora: cada vetor gera a sua própria consulta, com <span class=\"formula\"><i>Q = XW<sub>Q</sub></i></span>, além da chave e do valor, e <i>A</i> fica <i>N × N</i>. Cada saída é uma mistura de todos os vetores da sequência, inclusive de si mesmo. Compare com o passo 6: lá, as consultas vinham de outra sequência; aqui, cada palavra consulta a própria frase.",
+      text: "Na <b>self-attention</b> não há consultas de fora: cada vetor gera a sua própria consulta, com <span class=\"formula\"><i>Q = XW<sub>Q</sub></i></span>, além da chave e do valor, e <i>A</i> fica <i>N × N</i>. Cada saída é uma mistura de todos os vetores da sequência, inclusive de si mesmo. Compare com o passo 7: lá, as consultas vinham de outra sequência; aqui, cada palavra consulta a própria frase.",
       note: { q: "O que acontece com cada palavra?",
               a: "Cada palavra é reescrita com informação das outras palavras da frase: o vetor deixa de descrever a palavra isolada e passa a descrevê-la naquele contexto. Sem isso, a cross-attention receberia palavras isoladas: para traduzir <i>the</i> como <i>il</i> ou <i>la</i>, ela teria de olhar para <i>the</i> e <i>sky</i> ao mesmo tempo e torcer para a média funcionar. No Transformer completo, a saída da atenção é somada à entrada (conexão residual) e passa por uma pequena rede aplicada a cada palavra (MLP); empilhando camadas, a representação é refinada várias vezes. No ViT, o mesmo acontece com pedaços da imagem. Veja outros casos em “Exemplos na linguagem”." } },
     { title: "A ordem não importa (ainda)", slides: "52-58", isNew: ["perm"],
@@ -756,13 +782,15 @@
     { title: "Máscara: sem olhar para o futuro", slides: "61-62", isNew: ["E", "A"],
       text: "Num modelo de linguagem, cada palavra só pode ver as anteriores. Trocamos por <b>−∞</b> as similaridades com posições futuras, e o softmax dá peso exatamente 0 a elas. Arraste <b class=\"role-data\">sky</b>: só a última saída muda.",
       note: { q: "Onde fica esta máscara num Transformer?",
-              a: "No encoder não há máscara: a frase de origem inteira já é conhecida, e tudo é calculado em paralelo. No decoder, a máscara impede cada posição de ver as seguintes. Por isso, no treino, todas as posições são calculadas juntas, com o mesmo resultado da geração palavra por palavra. Na geração, o decoder é sequencial. O passo 11 mostra isso." } },
+              a: "No encoder não há máscara: a frase de origem inteira já é conhecida, e tudo é calculado em paralelo. No decoder, a máscara impede cada posição de ver as seguintes. Por isso, no treino, todas as posições são calculadas juntas, com o mesmo resultado da geração palavra por palavra. Na geração, o decoder é sequencial. O passo 12 mostra isso." } },
     { title: "Gerando a tradução", slides: "complemento", isNew: [],
       text: "Na geração, o decoder produz uma palavra por vez. A cada palavra, uma única consulta olha para as palavras já geradas (self-attention com máscara) e para a frase de origem (cross-attention). No treino, a frase inteira é conhecida e tudo é calculado de uma vez, com os mesmos números.",
-      note: { q: "Como o encoder aprende, se é calculado uma vez só?",
-              a: "“Uma vez só” vale para cada frase, na hora de gerar; os pesos do encoder são ajustados ao longo de milhões de frases no treino. O erro da tradução volta pelo decoder e chega ao encoder pela cross-attention, a única ponte entre os dois. Cada palavra de origem recebe mais sinal quanto mais o decoder prestou atenção nela. Assim o encoder aprende representações que ajudam a traduzir, sem saber que está traduzindo." } },
-    { title: "Várias cabeças", slides: "63-67", isNew: ["heads", "WO"],
-      text: "Rodamos <i>H</i> cópias da self-attention em paralelo, cada uma com seus próprios pesos: cada <b>cabeça</b> pode prestar atenção a relações diferentes. As saídas das cabeças são empilhadas e misturadas por <span class=\"formula\"><i>W<sub>O</sub></i></span>, voltando à dimensão <i>D</i>. Para simplificar, sem máscara e sem posição." },
+      note: [{ q: "Como o encoder aprende, se é calculado uma vez só?",
+              a: "“Uma vez só” vale para cada frase, na hora de gerar; os pesos do encoder são ajustados ao longo de milhões de frases no treino. O erro da tradução volta pelo decoder e chega ao encoder pela cross-attention, a única ponte entre os dois. Cada palavra de origem recebe mais sinal quanto mais o decoder prestou atenção nela. Assim o encoder aprende representações que ajudam a traduzir, sem saber que está traduzindo." },
+             { q: "E num modelo só decoder, como o GPT?",
+               a: "Não há encoder nem cross-attention: só a self-attention com máscara. A geração é a mesma: a cada palavra, uma consulta nova, e as chaves e os valores das palavras anteriores ficam no cache. É isso que permite gerar texto sem recalcular toda a sequência a cada palavra." }] },
+    { title: "Várias cabeças", slides: "63-67", isNew: [],
+      text: "Rodamos <i>H</i> cabeças em paralelo, cada uma numa fatia dos vetores: aqui, <i>D</i> = 4 e duas cabeças de <i>D<sub>H</sub></i> = 2. Cada cabeça calcula a sua atenção na sua fatia de <i>Q</i>, <i>K</i> e <i>V</i>, e pode prestar atenção a relações diferentes. As saídas são concatenadas de volta a <i>D</i> = 4 e misturadas por <span class=\"formula\"><i>W<sub>O</sub></i></span>." },
     { title: "Quatro multiplicações de matrizes", slides: "68-77", isNew: ["shapes"],
       text: "Na prática, todas as cabeças são calculadas juntas, com multiplicações de matrizes em lote, e a camada inteira se reduz a quatro produtos. O resultado é o mesmo do passo anterior. Mude <i>N</i>, <i>D</i> e <i>H</i> para ver a forma de cada produto." },
     { title: "Quanto de memória?", slides: "78-79", isNew: ["mem"],
@@ -770,59 +798,78 @@
   ];
 
   /* ================= Etapas (research R2, R13) ================= */
-  function isPron() { return state.step === 7 && opt.example === "pronome"; }
+  function isPron() { return state.step === 8 && opt.example === "pronome"; }
   function stageCount(n) {
-    if (n === 2) return 7;
-    if (n === 4) return 5;
-    if (n === 5) return 3;
-    if (n === 7) return opt.example === "pronome" ? 1 : 6;
-    if (n === 10) return opt.mask ? 4 : 1;
-    if (n === 11) return 5;
+    if (n === 0) return 4;
+    if (n === 3) return 7;
+    if (n === 5) return 5;
+    if (n === 6) return 3;
+    if (n === 8) return opt.example === "pronome" ? 1 : 7;
+    if (n === 11) return opt.mask ? 4 : 1;
+    if (n === 12) return 5;
+    if (n === 13) return 5;
     return 1;
   }
   function stageNew(n) {
     var s = state.stage;
-    if (n === 2) return s === 1 ? ["q"] : s <= 5 ? ["e"] : s === 6 ? ["a"] : ["y"];
-    if (n === 4) return s === 1 ? ["Q"] : ["E", "A", "Y"];
-    if (n === 5) return [["WK", "K"], ["WV", "V"], ["E", "A", "Y"]][s - 1];
-    if (n === 7 && opt.example === "pronome") return ["A"];
-    if (n === 7) return s === 1 ? ["WQ", "Qs", "K", "V"] : ["E", "A", "Y"];
-    if (n === 10 && opt.mask) return [["E"], ["E"], ["A"], ["Y"]][s - 1];
-    if (n === 11) return s === 1 ? ["Kenc", "Venc"] : s <= 4 ? ["cache", "aself", "across"] : ["trainSelf", "trainCross"];
+    if (n === 0) return [["x", "w1", "y"], ["W", "y"], ["u", "v", "outer"], ["Xs", "XW"]][s - 1];
+    if (n === 3) return s === 1 ? ["q"] : s <= 5 ? ["e"] : s === 6 ? ["a"] : ["y"];
+    if (n === 5) return s === 1 ? ["Q"] : ["E", "A", "Y"];
+    if (n === 6) return [["WK", "K"], ["WV", "V"], ["E", "A", "Y"]][s - 1];
+    if (n === 8 && opt.example === "pronome") return ["A"];
+    if (n === 8) return s === 1 ? ["WQ", "Qs", "K", "V"] : s === 2 ? ["Wqkv", "XWqkv"] : ["E", "A", "Y"];
+    if (n === 11 && opt.mask) return [["E"], ["E"], ["A"], ["Y"]][s - 1];
+    if (n === 12) return s === 1 ? ["Kenc", "Venc"] : s <= 4 ? ["cache", "aself", "across"] : ["trainSelf", "trainCross"];
+    if (n === 13) return [["mhQ", "mhK", "mhV"], ["slice"], ["mhA"], ["mhY"], ["concat", "O"]][s - 1];
     return STEPS[n].isNew || [];
   }
   function stageCaption(n, R) {
     var s = state.stage, j, k;
+    if (n === 0) {
+      var a0 = ex.alg, d0 = a0.cols.length;
+      if (s === 1) return "y₁ = x · w₁ = " + vn(a0.x) + " · " + vn(a0.cols[0]) + " = " + num(a0.x[0]) + "·" + num(a0.cols[0][0]) + " + " + num(a0.x[1]) + "·" + num(a0.cols[0][1]) +
+        " = <b>" + num(R.y[0]) + "</b>: uma combinação dos números de <i>x</i> é um produto escalar";
+      if (s === 2) return "xW = <b>" + vn(R.y) + "</b>: " + (d0 > 1 ? d0 + " combinações de uma vez, uma por coluna" : "uma combinação só") +
+        "; o vetor tinha 2 números e agora tem " + d0 + " (projeção 2 → " + d0 + "). Use + e − para mudar o número de colunas";
+      if (s === 3) return "uᵀv: a tabela de todos os produtos uᵢvⱼ. Com uma consulta e várias chaves, QKᵀ tem essa forma: um número por par";
+      return "XW projeta cada linha de <i>X</i> como na etapa 2, numa única multiplicação: é o K = XW<sub>K</sub> do passo 6";
+    }
     if (n === 2) {
+      var b = R.box;
+      return "Entrada [" + b.nIn + " × " + b.din + "]" + (b.cross ? " e consultas [" + b.nQ + " × " + b.din + "]" : "") + " → saída [" + b.nQ + " × " + b.dout + "]: " +
+        (b.cross ? "um vetor por consulta, não por dado" : "um vetor por vetor de entrada, porque cada um faz a sua consulta");
+    }
+    if (n === 3) {
       if (s === 1) return "";
       if (s <= 5) { j = s - 2; return "e" + SUB[j] + " = q · X" + SUB[j] + " = " + v2(R.q[0]) + " · " + v2(R.x[j]) + " = <b>" + fmt(R.E[0][j]) + "</b>"; }
       if (s === 6) { j = argmax(R.A[0]); return "a = softmax(e): cada exp(eᵢ) dividida pela soma das quatro. Os pesos somam 1, e o maior é o de <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[0][j]) + ")"; }
       return "y = Σ aᵢXᵢ = <b>" + v2(R.Y[0]) + "</b>: a média dos dados ponderada pelos pesos";
     }
-    if (n === 4) {
+    if (n === 5) {
       if (s === 1) return "";
-      if (s <= 4) { k = s - 2; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": a conta do passo 2 para q" + SUB[k] + " (<i>" + QUERY_LABELS[k] + "</i>). Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + "), e y" + SUB[k] + " = " + v2(R.Y[k]); }
+      if (s <= 4) { k = s - 2; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": a conta do passo 3 para q" + SUB[k] + " (<i>" + QUERY_LABELS[k] + "</i>). Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + "), e y" + SUB[k] + " = " + v2(R.Y[k]); }
       return "Y = AX: as três linhas numa única multiplicação de matrizes, com os mesmos números das etapas anteriores";
     }
-    if (n === 5) return [
-      "As chaves são os dados transformados por W<sub>K</sub>: são elas que a consulta compara. Por exemplo, k<sub>sky</sub> = X₄W<sub>K</sub> = " + v2(R.K[3]),
-      "Os valores são os dados transformados por W<sub>V</sub>: são eles que vão para a saída. Por exemplo, v<sub>sky</sub> = X₄W<sub>V</sub> = " + v2(R.V[3]),
-      "A mesma conta do passo 4, com <i>K</i> na comparação (E = QKᵀ/√D) e <i>V</i> na mistura (Y = AV)"][s - 1];
-    if (n === 7 && opt.example === "pronome") {
+    if (n === 6) return [
+      "As chaves são o que descreve cada item na busca, como o título e as tags de um vídeo: é com elas que a consulta é comparada. Aqui, K = XW<sub>K</sub>; por exemplo, k<sub>sky</sub> = " + v2(R.K[3]),
+      "Os valores são o conteúdo devolvido, o próprio vídeo: o que se recupera é diferente do que se compara. Aqui, V = XW<sub>V</sub>; por exemplo, v<sub>sky</sub> = " + v2(R.V[3]),
+      "A mesma conta do passo 5, com <i>K</i> na comparação (E = QKᵀ/√D) e <i>V</i> na mistura (Y = AV)"][s - 1];
+    if (n === 8 && opt.example === "pronome") {
       j = argmax(R.A[PRON_ELE]);
       return "<i>ele</i> dá o maior peso a <i>" + PRON_LABELS[j] + "</i> (" + fmt(R.A[PRON_ELE][j]) + "), e <i>rua</i> recebe " + fmt(R.A[PRON_ELE][5]) + ". A saída de <i>ele</i> passa a carregar informação de <i>" + PRON_LABELS[j] + "</i>";
     }
-    if (n === 7) {
+    if (n === 8) {
       if (s === 1) return "";
-      if (s <= 5) { k = s - 2; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": <i>" + DATA_LABELS[k] + "</i> compara a sua consulta com as chaves de todas as palavras da frase. Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + ")"; }
+      if (s === 2) return "Uma multiplicação devolve Q, K e V: W = [W<sub>Q</sub> | W<sub>K</sub> | W<sub>V</sub>] tem forma D × 3D, e as três fatias de XW são Q, K e V. Na prática, D<sub>in</sub> = D<sub>out</sub> = D, e esta é a primeira das quatro multiplicações do passo 14";
+      if (s <= 6) { k = s - 3; j = argmax(R.A[k]); return "Linha " + (k + 1) + ": <i>" + DATA_LABELS[k] + "</i> compara a sua consulta com as chaves de todas as palavras da frase. Maior peso em <i>" + DATA_LABELS[j] + "</i> (" + fmt(R.A[k][j]) + ")"; }
       return "Cada saída é a sua palavra reescrita com o contexto da frase";
     }
-    if (n === 10 && opt.mask) return [
+    if (n === 11 && opt.mask) return [
       "Sem máscara, cada palavra se compara com todas, inclusive as seguintes",
       "As posições futuras (acima da diagonal) recebem −∞",
       "exp(−∞) = 0: as palavras futuras recebem peso exatamente 0, e cada linha continua somando 1",
       "Cada saída mistura só a própria palavra e as anteriores"][s - 1];
-    if (n === 11) {
+    if (n === 12) {
       if (s === 1) return "O encoder lê a frase inteira uma vez: K<sub>enc</sub> e V<sub>enc</sub> não mudam mais";
       if (s <= 4) {
         k = s - 2;
@@ -832,6 +879,15 @@
           "; a cross-attention dá o maior peso a " + topWords(g.crossA[k], DATA_LABELS) + ". O encoder não foi recalculado";
       }
       return "Treino: a tradução inteira é conhecida, e as três posições são calculadas numa só multiplicação, com máscara. Cada linha é igual à da etapa correspondente";
+    }
+    if (n === 13) {
+      var best = function (h) { return R.heads[h].A.map(function (row, i) { return "<i>" + DATA_LABELS[i] + "</i> → <i>" + DATA_LABELS[argmax(row)] + "</i>"; }).join(", "); };
+      return [
+        "Q = XW<sub>Q</sub>, K = XW<sub>K</sub> e V = XW<sub>V</sub>, agora com <i>D</i> = 4: cada matriz é 4 × 4",
+        "Fatiamos as colunas: a cabeça 1 fica com as colunas 1-2 e a cabeça 2 com as colunas 3-4. Cada fatia é 4 × 2",
+        "Cada cabeça faz a conta do passo 8 na sua fatia. Maior peso, cabeça 1: " + best(0) + "; cabeça 2: " + best(1),
+        "Y<sub>h</sub> = A<sub>h</sub>V<sub>h</sub>: cada cabeça devolve 4 vetores de 2 dimensões",
+        "Concatenamos [Y₁ | Y₂] de volta a 4 × 4 e misturamos com W<sub>O</sub>: O = [Y₁ | Y₂]W<sub>O</sub>"][s - 1];
     }
     return "";
   }
@@ -852,65 +908,78 @@
   function compute(n) {
     var X = ex.data, Q = ex.queries, ident = [0, 1, 2, 3];
     var R = { order: ident };
+    if (n === 0) {
+      var a = ex.alg, W0 = T(a.cols);
+      return { order: ident, W: W0, y: matmul([a.x], W0)[0], outer: a.u.map(function (ui) { return a.v.map(function (vj) { return ui * vj; }); }), XW: matmul(a.X, W0) };
+    }
+    if (n === 2) {
+      var cross = opt.boxType === "cross";
+      return { order: ident, box: { cross: cross, nIn: cross ? opt.boxNX : opt.boxN, nQ: cross ? opt.boxNQ : opt.boxN, din: opt.boxDin, dout: opt.boxDout } };
+    }
     if (n === 1) {
       var e1 = [X.map(function (h) { return Math.tanh(ex.s0[0] + h[0]) + Math.tanh(ex.s0[1] + h[1]); })];
       R.E = e1; R.A = softmaxRows(e1); R.Y = matmul(R.A, X); R.x = X; R.q = [ex.s0];
       return R;
     }
-    if (n === 2 || n === 3) {
-      var s = n === 3 ? opt.stretch : 1;
+    if (n === 3 || n === 4) {
+      var s = n === 4 ? opt.stretch : 1;
       var q = [Q[2].map(function (c) { return c * s; })];
       var x = scaleM(X, s);
       var e = matmul(q, T(x));
-      if (n === 3 && opt.scale) e = scaleM(e, 1 / Math.sqrt(2));
+      if (n === 4 && opt.scale) e = scaleM(e, 1 / Math.sqrt(2));
       R.E = e; R.A = softmaxRows(e); R.Y = matmul(R.A, x); R.x = x; R.q = q;
       return R;
     }
-    if (n === 4) {
+    if (n === 5) {
       var r4 = attention(Q, X, X);
       r4.x = X; r4.q = Q; r4.order = ident;
       return r4;
     }
-    if (n === 5 || n === 6) {
+    if (n === 6 || n === 7) {
       var K = matmul(X, ex.WK), V = matmul(X, ex.WV);
       var r5 = attention(Q, K, V);
       r5.K = K; r5.V = V; r5.x = X; r5.q = Q; r5.order = ident;
       return r5;
     }
-    if (n === 7) {
+    if (n === 8) {
       var x7 = opt.example === "pronome" ? ex.pron : X;
       var r7 = selfAttention(x7, ex.WQ, ex.WK, ex.WV);
       r7.x = x7; r7.order = range(x7.length);
       return r7;
     }
-    if (n === 8 || n === 9) {
+    if (n === 9 || n === 10) {
       var order = opt.permute ? PERM : ident;
       var xi = order.map(function (i) { return X[i]; });
       var P = null;
-      if (n === 9 && opt.positions) { P = positions(xi.length); xi = addM(xi, P); }
+      if (n === 10 && opt.positions) { P = positions(xi.length); xi = addM(xi, P); }
       var r8 = selfAttention(xi, ex.WQ, ex.WK, ex.WV);
       r8.x = xi; r8.order = order; r8.P = P;
       return r8;
     }
-    if (n === 10) {
+    if (n === 11) {
       var P10 = positions(X.length), x10 = addM(X, P10);
       var r10 = selfAttention(x10, ex.WQ, ex.WK, ex.WV, opt.mask ? causal(X.length) : null);
       r10.x = x10; r10.P = P10; r10.order = ident; r10.mask = opt.mask ? causal(X.length) : null;
       r10.Eraw = selfAttention(x10, ex.WQ, ex.WK, ex.WV).E;
       return r10;
     }
-    if (n === 11) {
+    if (n === 12) {
       var g = generation(3);
       g.order = [0, 1, 2];
       return g;
     }
-    if (n === 12 || n === 13) {
-      var h1 = selfAttention(X, ex.WQ, ex.WK, ex.WV);
-      var h2 = selfAttention(X, HEAD2.WQ, HEAD2.WK, HEAD2.WV);
-      var stacked = h1.Y.map(function (r, i) { return r.concat(h2.Y[i]); });
-      return { order: ident, x: X, heads: [h1, h2], stacked: stacked, A: h1.A, A2: h2.A, Y: matmul(stacked, WO) };
+    if (n === 13 || n === 14) {
+      var Qm = matmul(MH.X, MH.WQ), Km = matmul(MH.X, MH.WK), Vm = matmul(MH.X, MH.WV);
+      var cut = function (m, h) { return m.map(function (r) { return r.slice(2 * h, 2 * h + 2); }); };
+      var heads = [0, 1].map(function (h) {
+        var r = attention(cut(Qm, h), cut(Km, h), cut(Vm, h));
+        r.Q = cut(Qm, h); r.K = cut(Km, h); r.V = cut(Vm, h);
+        return r;
+      });
+      var concat = heads[0].Y.map(function (r, i) { return r.concat(heads[1].Y[i]); });
+      return { order: ident, Q: Qm, K: Km, V: Vm, heads: heads, concat: concat, A: heads[0].A, A2: heads[1].A, Y: matmul(concat, MH.WO) };
     }
-    if (n === 14) {
+    if (n === 15) {
       return { memoryBytes: opt.memH * opt.memN * opt.memN * opt.bytes };
     }
     return R;
@@ -1008,19 +1077,22 @@
     }).join("");
   }
 
-  function useTape(n) { return n === 11 || ((n === 6 || n === 7) && opt.view === "fita"); }
+  function useTape(n) { return n === 12 || ((n === 7 || n === 8) && opt.view === "fita"); }
 
   function drawPlot(n, R) {
     svg.innerHTML = "";
     svg.setAttribute("aria-label", useTape(n) ? "Palavras ligadas pelos pesos de atenção" : "Plano com os vetores do passo atual");
-    if (n === 14) { drawMemoryCurve(); legend([]); return; }
+    if (n === 15) { drawMemoryCurve(); legend([]); return; }
+    if (n === 0) { drawAlgebra(R); return; }
+    if (n === 2) { drawBox(R.box); return; }
+    if (n === 13 || n === 14) { drawHead(R); return; }
     if (useTape(n)) { drawTape(n, R); return; }
     var st = state.stage;
     var vecs = [];
     if (R.x) vecs = vecs.concat(R.x);
     if (R.q) vecs = vecs.concat(R.q);
-    if (R.K && (opt.geo === "K" || n === 5)) vecs = vecs.concat(R.K);
-    if (R.V && (opt.geo === "V" || n === 5)) vecs = vecs.concat(R.V);
+    if (R.K && (opt.geo === "K" || n === 6)) vecs = vecs.concat(R.K);
+    if (R.V && (opt.geo === "V" || n === 6)) vecs = vecs.concat(R.V);
     chooseExtent(vecs.concat(ex.data));
     drawGrid();
 
@@ -1032,8 +1104,8 @@
       legend([["--data", "estados do encoder hᵢ"], ["--query", "estado do decoder s₀"], ["--output", "contexto c"], ["--accent", "peso aᵢ"]]);
       return;
     }
-    if (n === 2 || n === 3) {
-      var s2 = n === 2 ? st : 7;
+    if (n === 3 || n === 4) {
+      var s2 = n === 3 ? st : 7;
       if (s2 >= 6) wires(R.q[0], R.x, R.A[0]);
       else compares(R.q[0], R.x, s2 - 1);
       R.x.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i }); });
@@ -1042,7 +1114,7 @@
       legend([["--data", "dados X"], ["--query", "consulta q"], ["--output", "saída y"], [s2 >= 6 ? "--accent" : "--ink-faint", s2 >= 6 ? "peso aᵢ" : "comparação (tracejado)"]]);
       return;
     }
-    if (n === 5 && st < 3) {
+    if (n === 6 && st < 3) {
       ex.data.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i, dim: true }); });
       R.K.forEach(function (v, i) { arrow(v, "key", i, "k " + DATA_LABELS[i], { hlRole: "data" }); });
       if (st >= 2) R.V.forEach(function (v, i) { arrow(v, "value", i, "v " + DATA_LABELS[i], { hlRole: "data" }); });
@@ -1050,9 +1122,9 @@
       legend([["--data", "dados X (apagados) e chaves K (tracejado)"]].concat(st >= 2 ? [["--measure", "valores V (pontilhado)"]] : []).concat([["--query", "consultas Q"]]));
       return;
     }
-    if (n >= 4 && n <= 6) {
-      var rows = n === 4 ? (st >= 5 ? 3 : st - 1) : 3;
-      var sel = selected("query", n === 4 && st >= 2 && st <= 4 ? st - 2 : 2, 3);
+    if (n >= 5 && n <= 7) {
+      var rows = n === 5 ? (st >= 5 ? 3 : st - 1) : 3;
+      var sel = selected("query", n === 5 && st >= 2 && st <= 4 ? st - 2 : 2, 3);
       var targets = opt.geo === "K" && R.K ? R.K : opt.geo === "V" && R.V ? R.V : ex.data;
       var role = opt.geo === "K" && R.K ? "key" : opt.geo === "V" && R.V ? "value" : "data";
       if (sel < rows) wires(ex.queries[sel], targets, R.A[sel]);
@@ -1067,14 +1139,14 @@
       legend(leg);
       return;
     }
-    if (n >= 7 && n <= 10) {
-      var pron = n === 7 && opt.example === "pronome";
+    if (n >= 8 && n <= 11) {
+      var pron = n === 8 && opt.example === "pronome";
       var labelsOf = pron ? PRON_LABELS : DATA_LABELS;
       var count = R.x.length;
       var rows7 = count;
-      if (n === 7 && !pron) rows7 = st === 1 ? 0 : st >= 6 ? 4 : st - 1;
-      if (n === 10 && opt.mask) rows7 = st >= 3 ? 4 : 0;
-      var selI = pron ? PRON_ELE : (n === 7 && st >= 2 && st <= 5 ? st - 2 : 0);
+      if (n === 8 && !pron) rows7 = st <= 2 ? 0 : st >= 7 ? 4 : st - 2;
+      if (n === 11 && opt.mask) rows7 = st >= 3 ? 4 : 0;
+      var selI = pron ? PRON_ELE : (n === 8 && st >= 3 && st <= 6 ? st - 3 : 0);
       if (state.highlight && state.highlight.role === "data") {
         var pos = R.order.indexOf(state.highlight.i);
         if (pos >= 0) selI = pos;
@@ -1087,27 +1159,87 @@
               { drag: R.P ? null : (pron ? "pron:" : "data:") + orig, dim: allowed && !allowed[t] && selI < rows7, small: pron });
       });
       if (R.P) R.order.forEach(function (orig) { arrow(ex.data[orig], "data", orig, "", { drag: "data:" + orig, dim: true }); });
-      var outRows = n === 10 && opt.mask ? (st >= 4 ? 4 : 0) : rows7;
+      var outRows = n === 11 && opt.mask ? (st >= 4 ? 4 : 0) : rows7;
       R.order.forEach(function (orig, t) { if (t < outRows) outputPoint(R.Y[t], orig, "y " + labelsOf[orig], "data", t === selI); });
       legend([["--data", R.P ? "entrada X + P (posição tracejada)" : "entrada X"], ["--output", "saídas Y (rótulo na destacada)"], ["--accent", "pesos do vetor destacado"]]);
       return;
     }
-    if (n === 12 || n === 13) {
-      var head = n === 12 ? opt.head : -1;
-      var selD = selected("data", 0, 4);
-      if (head >= 0) {
-        var H = R.heads[head];
-        wires(H.Q[selD], H.K, H.A[selD]);
-        H.K.forEach(function (v, i) { arrow(v, "key", i, "k " + DATA_LABELS[i], { hlRole: "data" }); });
-        arrow(H.Q[selD], "query", selD, "q " + DATA_LABELS[selD], { hlRole: "data" });
-        H.Y.forEach(function (y, i) { outputPoint(y, i, "y" + (head + 1) + " " + DATA_LABELS[i], "data", i === selD); });
-        legend([["--data", "chaves da cabeça " + (head + 1)], ["--query", "consulta destacada"], ["--output", "saídas da cabeça"]]);
-      } else {
-        ex.data.forEach(function (v, i) { arrow(v, "data", i, DATA_LABELS[i], { drag: "data:" + i }); });
-        R.Y.forEach(function (y, i) { outputPoint(y, i, "o " + DATA_LABELS[i], "data", i === selD); });
-        legend([["--data", "entrada X"], ["--output", "saídas O = Y W_O"]]);
-      }
+  }
+
+  /* ---------- passo 0: x e as colunas de W ---------- */
+  function drawAlgebra(R) {
+    var a = ex.alg, st = state.stage;
+    if (st === 3) {
+      // v tem 3 números: não cabe no plano e fica só na vista de matrizes
+      chooseExtent([a.u]);
+      drawGrid();
+      arrow(a.u, "query", 0, "u", {});
+      legend([["--query", "vetor u (v tem 3 números e aparece só na matriz)"]]);
+      return;
     }
+    var cols = st === 1 ? a.cols.slice(0, 1) : a.cols;
+    var rows = st === 4 ? a.X : [a.x];
+    chooseExtent(rows.concat(cols));
+    drawGrid();
+    var drag = true;
+    cols.forEach(function (w, j) {
+      var lab = st === 4 ? "w" + SUB[j] : "x·w" + SUB[j] + " = " + num(R.y[j]);
+      arrow(w, "data", j, lab, { drag: drag ? "alg:c:" + j : null });
+    });
+    if (st === 4) {
+      a.X.forEach(function (x, i) { arrow(x, "query", i, "X" + SUB[i], {}); });
+      legend([["--query", "linhas de X (edite na matriz)"], ["--data", "colunas wⱼ de W"]]);
+    } else {
+      arrow(a.x, "query", 0, "x", { drag: "alg:x" });
+      legend([["--query", "vetor x"], ["--data", st === 1 ? "combinação w₁ (valor na ponta)" : "colunas wⱼ de W (valor na ponta)"]]);
+    }
+  }
+
+  /* ---------- passo 2: a caixa preta ---------- */
+  function drawBox(b) {
+    var top = 70, bottom = 470, CELL = Math.min(20, 108 / Math.max(b.din, b.dout));
+    function seq(n, d, x, y0, y1, role, name) {
+      var sp = Math.min(48, (y1 - y0) / n), ys = [];
+      var start = (y0 + y1) / 2 - sp * (n - 1) / 2;
+      for (var i = 0; i < n; i++) {
+        var y = start + i * sp;
+        ys.push(y);
+        for (var k = 0; k < d; k++) {
+          svg.appendChild(node("rect", { "class": "cell " + role, x: x + k * CELL, y: y - CELL / 2, width: CELL - 2, height: CELL - 2, rx: 3 }));
+        }
+      }
+      svg.appendChild(node("text", { "class": "tape-sub", x: x, y: ys[0] - CELL / 2 - 12 }, name));
+      return { ys: ys, right: x + d * CELL, left: x };
+    }
+    var boxL = 200, boxR = 320;
+    var ins = [];
+    if (b.cross) {
+      ins.push(seq(b.nQ, b.din, 20, top + 10, 250, "query", "consultas: " + b.nQ + " × " + b.din));
+      ins.push(seq(b.nIn, b.din, 20, 300, bottom, "data", "dados: " + b.nIn + " × " + b.din));
+    } else {
+      ins.push(seq(b.nIn, b.din, 20, top + 10, bottom, "data", "entrada: " + b.nIn + " × " + b.din));
+    }
+    var out = seq(b.nQ, b.dout, 360, top + 10, bottom, "output", "saída: " + b.nQ + " × " + b.dout);
+    ins.forEach(function (g) { g.ys.forEach(function (y) { svg.appendChild(node("line", { "class": "cmp", x1: g.right + 2, y1: y, x2: boxL, y2: 270 })); }); });
+    out.ys.forEach(function (y) { svg.appendChild(node("line", { "class": "cmp", x1: boxR, y1: 270, x2: out.left - 4, y2: y })); });
+    svg.appendChild(node("rect", { "class": "blackbox", x: boxL, y: 220, width: boxR - boxL, height: 100, rx: 10 }));
+    svg.appendChild(node("text", { "class": "blackbox-label", x: (boxL + boxR) / 2, y: 266, "text-anchor": "middle" }, "atenção"));
+    svg.appendChild(node("text", { "class": "tick", x: (boxL + boxR) / 2, y: 290, "text-anchor": "middle" }, b.cross ? "cross" : "self"));
+    legend(b.cross ? [["--query", "consultas"], ["--data", "dados"], ["--output", "saída: uma por consulta"]]
+                   : [["--data", "entrada (também as consultas)"], ["--output", "saída: uma por vetor de entrada"]]);
+  }
+
+  /* ---------- passos 13 e 14: a fatia 2D de uma cabeça ---------- */
+  function drawHead(R) {
+    var head = opt.head, H = R.heads[head];
+    var selD = selected("data", 0, 4);
+    chooseExtent(H.Q.concat(H.K, H.Y));
+    drawGrid();
+    wires(H.Q[selD], H.K, H.A[selD]);
+    H.K.forEach(function (v, i) { arrow(v, "key", i, "k " + DATA_LABELS[i], { hlRole: "data" }); });
+    arrow(H.Q[selD], "query", selD, "q " + DATA_LABELS[selD], { hlRole: "data" });
+    H.Y.forEach(function (y, i) { outputPoint(y, i, "y" + (head + 1) + " " + DATA_LABELS[i], "data", i === selD); });
+    legend([["--data", "chaves da cabeça " + (head + 1) + " (colunas " + (2 * head + 1) + "-" + (2 * head + 2) + ")"], ["--query", "consulta destacada"], ["--output", "saídas da cabeça"]]);
   }
 
   /* ---------- palavras ligadas pelos pesos (research R6) ---------- */
@@ -1122,15 +1254,15 @@
     var XL = 110, XR = 330, LINE_L = 222, LINE_R = 322;
     var st = state.stage, cfg;
     var hl = state.highlight;
-    if (n === 6) {
+    if (n === 7) {
       cfg = { left: QUERY_LABELS, right: DATA_LABELS, A: R.A, lRole: "query", rRole: "data",
               headL: "Q vem daqui", subL: "italiano: consultas", headR: "K e V vêm daqui", subR: "inglês: chaves e valores",
               avail: 3, active: hl && hl.role === "query" ? hl.i : null, activeR: hl && hl.role === "data" ? hl.i : null };
-    } else if (n === 7) {
+    } else if (n === 8) {
       var pron = opt.example === "pronome";
       var words = pron ? PRON_LABELS : DATA_LABELS;
-      var rows = pron ? words.length : (st === 1 ? 0 : st >= 6 ? 4 : st - 1);
-      var act = pron ? PRON_ELE : (st >= 2 && st <= 5 ? st - 2 : null);
+      var rows = pron ? words.length : (st <= 2 ? 0 : st >= 7 ? 4 : st - 2);
+      var act = pron ? PRON_ELE : (st >= 3 && st <= 6 ? st - 3 : null);
       if (hl && hl.role === "data" && hl.i < words.length) act = hl.i;
       cfg = { left: words, right: words, A: R.A, lRole: "data", rRole: "data", single: true,
               headL: "Q, K e V vêm da mesma frase", subL: "como consulta", subR: "como chave e valor",
@@ -1157,7 +1289,7 @@
     svg.appendChild(node("text", { "class": "tape-sub", x: XL, y: 60 }, cfg.subL));
     svg.appendChild(node("text", { "class": "tape-sub", x: XR, y: 60 }, cfg.subR));
 
-    // arcos de self-attention do decoder (passo 11), à esquerda das palavras
+    // arcos de self-attention do decoder (passo 12), à esquerda das palavras
     if (cfg.selfA) {
       for (var i = 0; i < cfg.rows; i++) {
         if (cfg.active != null && i !== cfg.active) continue;
@@ -1195,7 +1327,7 @@
     cfg.left.forEach(function (w2, i2) {
       var isAct = cfg.active === i2;
       word(w2, XL, yl[i2], cfg.lRole, i2, i2 >= cfg.avail, "q");
-      if (isAct && n !== 11) svg.lastChild.setAttribute("class", (svg.lastChild.getAttribute("class") || "") + " act");
+      if (isAct && n !== 12) svg.lastChild.setAttribute("class", (svg.lastChild.getAttribute("class") || "") + " act");
     });
     cfg.right.forEach(function (w3, i3) { word(w3, XR, yr[i3], cfg.rRole, i3, false, "kv"); });
     // pesos da palavra ativa, ao lado das palavras da direita
@@ -1204,7 +1336,7 @@
         svg.appendChild(node("text", { "class": "wval", x: 508, y: yr[b2], "text-anchor": "end" }, fmt(cfg.A[cfg.active][b2])));
       });
     }
-    if (n === 11) legend([["--accent", "cross-attention: a palavra atual olha a frase de origem"], ["--query", "self-attention: olha as palavras já geradas"]]);
+    if (n === 12) legend([["--accent", "cross-attention: a palavra atual olha a frase de origem"], ["--query", "self-attention: olha as palavras já geradas"]]);
     else legend([["--accent", "peso (espessura da linha)"]]);
   }
 
@@ -1244,12 +1376,19 @@
     return [Math.round((p.x - C) / R_PX * extent * 10) / 10, Math.round((C - p.y) / R_PX * extent * 10) / 10];
   }
   function vecList(kind) { return kind === "data" ? ex.data : kind === "pron" ? ex.pron : ex.queries; }
-  function getByKey(key) { if (key === "s0") return ex.s0; var p = key.split(":"); return vecList(p[0])[+p[1]]; }
+  function getByKey(key) {
+    if (key === "s0") return ex.s0;
+    var p = key.split(":");
+    if (p[0] === "alg") return p[1] === "x" ? ex.alg.x : ex.alg.cols[+p[2]];
+    return vecList(p[0])[+p[1]];
+  }
   function setByKey(key, v) {
-    var stretch = state.step === 3 ? opt.stretch : 1;
+    var stretch = state.step === 4 ? opt.stretch : 1;
     v = clampV([v[0] / stretch, v[1] / stretch]).map(function (c) { return Math.round(c * 10) / 10; });
+    var p = key.split(":");
     if (key === "s0") ex.s0 = v;
-    else { var p = key.split(":"); vecList(p[0])[+p[1]] = v; }
+    else if (p[0] === "alg") { if (p[1] === "x") ex.alg.x = v; else ex.alg.cols[+p[2]] = v; }
+    else vecList(p[0])[+p[1]] = v;
   }
   svg.addEventListener("pointerdown", function (evt) {
     var key = evt.target.getAttribute && evt.target.getAttribute("data-drag");
@@ -1273,7 +1412,7 @@
     if (!d || !evt.shiftKey) return;
     evt.preventDefault(); evt.stopPropagation();
     var cur = getByKey(key);
-    var stretch = state.step === 3 ? opt.stretch : 1;
+    var stretch = state.step === 4 ? opt.stretch : 1;
     setByKey(key, [(cur[0] + d[0]) * stretch, (cur[1] + d[1]) * stretch]);
     render(false);
     var again = svg.querySelector("[data-drag=\"" + key + "\"]");
@@ -1305,6 +1444,7 @@
         if (spec.heat && !masked && !hidden) {
           style = " style=\"background:color-mix(in srgb, var(--accent) " + Math.round(x * 70) + "%, transparent)\"";
         }
+        if (spec.groups && !hidden) style = " style=\"background:color-mix(in srgb, var(" + spec.groups[Math.floor(j / spec.groupSize)] + ") 18%, transparent)\"";
         var cellCls = masked ? " class=\"masked\"" : hidden ? " class=\"pending\"" : "";
         var content;
         if (hidden) content = "·";
@@ -1335,16 +1475,16 @@
       out += matrix({ key: "e", name: "e = f<sub>att</sub>(s₀, hᵢ)", m: R.E, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: rl });
       out += matrix({ key: "a", name: "a = softmax(e)", m: R.A, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: rl, heat: true, sum: true });
       out += matrix({ key: "c", name: "c = Σ aᵢhᵢ", m: R.Y, rowLabels: ["s₀"], rowRole: "query", rowIds: [0], cols: D_LAB });
-    } else if (n === 2 || n === 3) {
-      var s = n === 3 ? opt.stretch : 1, s2 = n === 2 ? st : 7;
+    } else if (n === 3 || n === 4) {
+      var s = n === 4 ? opt.stretch : 1, s2 = n === 3 ? st : 7;
       var qlab = ["q <span class=\"w\">cielo</span>"];
       out += matrix({ key: "q", name: s !== 1 ? "q (esticado ×" + s + ")" : "q", m: R.q, rowLabels: qlab, rowRole: "query", rowIds: [2], edit: s === 1 ? "query2" : null, cols: D_LAB });
       out += matrix({ key: "X", name: s !== 1 ? "X (esticado ×" + s + ")" : "X", m: R.x, rowLabels: rl, rowRole: "data", edit: s === 1 ? "data" : null, cols: D_LAB });
-      var ename = n === 3 && opt.scale ? "e = q·Xᵢ / √D" : "e = q·Xᵢ";
+      var ename = n === 4 && opt.scale ? "e = q·Xᵢ / √D" : "e = q·Xᵢ";
       if (s2 >= 2) out += matrix({ key: "e", name: ename, m: R.E, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: rl, colsShown: Math.min(4, s2 - 1) });
       if (s2 >= 6) out += matrix({ key: "a", name: "a = softmax(e)", m: R.A, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: rl, heat: true, sum: true });
       if (s2 >= 7) out += matrix({ key: "y", name: "y = Σ aᵢXᵢ", m: R.Y, rowLabels: qlab, rowRole: "query", rowIds: [2], cols: D_LAB });
-    } else if (n === 4) {
+    } else if (n === 5) {
       var rows4 = st >= 5 ? 3 : st - 1;
       var hl4 = st >= 2 && st <= 4 ? [st - 2] : st === 5 ? [0, 1, 2] : null;
       out += matrix({ key: "Q", name: "Q", m: ex.queries, rowLabels: ql, rowRole: "query", edit: "queries", cols: D_LAB, hlRows: hl4 });
@@ -1354,65 +1494,124 @@
         out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: ql, rowRole: "query", cols: rl, heat: true, sum: true, rowsShown: rows4, hlRows: hl4 });
         out += matrix({ key: "Y", name: "Y = AX", m: R.Y, rowLabels: ql, rowRole: "query", cols: D_LAB, rowsShown: rows4, hlRows: hl4 });
       }
-    } else if (n === 5 || n === 6) {
-      var s5 = n === 5 ? st : 3, it = n === 6 ? " <span class=\"w\">(italiano)</span>" : "", en = n === 6 ? " <span class=\"w\">(inglês)</span>" : "";
+    } else if (n === 6 || n === 7) {
+      var s5 = n === 6 ? st : 3, it = n === 7 ? " <span class=\"w\">(italiano)</span>" : "", en = n === 7 ? " <span class=\"w\">(inglês)</span>" : "";
       out += matrix({ key: "Q", name: "Q" + it, m: ex.queries, rowLabels: ql, rowRole: "query", edit: "queries", cols: D_LAB });
-      out += matrix(n === 6 ? { key: "X", name: "X" + en, m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB } : dataSpec);
-      if (n === 5) out += matrix({ key: "WK", name: "W<sub>K</sub>", m: ex.WK, rowLabels: D_LAB, edit: "WK", cols: ["k₁", "k₂"] });
+      out += matrix(n === 7 ? { key: "X", name: "X" + en, m: ex.data, rowLabels: rl, rowRole: "data", edit: "data", cols: D_LAB } : dataSpec);
+      if (n === 6) out += matrix({ key: "WK", name: "W<sub>K</sub>", m: ex.WK, rowLabels: D_LAB, edit: "WK", cols: ["k₁", "k₂"] });
       out += matrix({ key: "K", name: "K = XW<sub>K</sub>" + en, m: R.K, rowLabels: rl, rowRole: "data", cols: D_LAB });
       if (s5 >= 2) {
-        if (n === 5) out += matrix({ key: "WV", name: "W<sub>V</sub>", m: ex.WV, rowLabels: D_LAB, edit: "WV", cols: ["v₁", "v₂"] });
+        if (n === 6) out += matrix({ key: "WV", name: "W<sub>V</sub>", m: ex.WV, rowLabels: D_LAB, edit: "WV", cols: ["v₁", "v₂"] });
         out += matrix({ key: "V", name: "V = XW<sub>V</sub>" + en, m: R.V, rowLabels: rl, rowRole: "data", cols: D_LAB });
       }
       if (s5 >= 3) {
         out += matrix({ key: "E", name: "E = QKᵀ / √D", m: R.E, rowLabels: ql, rowRole: "query", cols: rl });
         out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: ql, rowRole: "query", cols: rl, heat: true, sum: true });
-        out += matrix({ key: "Y", name: "Y = AV" + (n === 6 ? " <span class=\"w\">(uma saída por consulta)</span>" : ""), m: R.Y, rowLabels: ql, rowRole: "query", cols: D_LAB });
+        out += matrix({ key: "Y", name: "Y = AV" + (n === 7 ? " <span class=\"w\">(uma saída por consulta)</span>" : ""), m: R.Y, rowLabels: ql, rowRole: "query", cols: D_LAB });
       }
-    } else if (n === 7 && opt.example === "pronome") {
+    } else if (n === 8 && opt.example === "pronome") {
       var pl = PRON_LABELS;
       out += matrix({ key: "X", name: "X", m: ex.pron, rowLabels: pl, rowRole: "data", edit: "pron", cols: D_LAB, hlRows: [PRON_ELE] });
       out += matrix({ key: "A", name: "A = softmax(QKᵀ/√D)", m: R.A, rowLabels: pl, rowRole: "data", cols: pl, heat: true, sum: true, hlRows: [PRON_ELE] });
       out += matrix({ key: "Y", name: "Y = AV", m: R.Y, rowLabels: pl, rowRole: "data", cols: D_LAB, hlRows: [PRON_ELE] });
       out += "<p class=\"note\" style=\"flex-basis:100%;margin:0\">Q = XW<sub>Q</sub>, K = XW<sub>K</sub> e V = XW<sub>V</sub> usam os mesmos pesos do exemplo <i>we see the sky</i>.</p>";
-    } else if (n >= 7 && n <= 10) {
+    } else if (n >= 8 && n <= 11) {
       var labels = R.order.map(function (i) { return DATA_LABELS[i]; });
       var rowIds = R.order;
       var rows7 = 4, hl7 = null;
-      if (n === 7) { rows7 = st === 1 ? 0 : st >= 6 ? 4 : st - 1; hl7 = st >= 2 && st <= 5 ? [st - 2] : null; }
-      if (n >= 8) {
+      if (n === 8) { rows7 = st <= 2 ? 0 : st >= 7 ? 4 : st - 2; hl7 = st >= 3 && st <= 6 ? [st - 3] : null; }
+      if (n >= 9) {
         if (R.P) out += matrix({ key: "P", name: "P (posição)", m: R.P, rowLabels: ["t=0", "t=1", "t=2", "t=3"], cols: D_LAB });
         out += matrix({ key: "perm", name: R.P ? "X + P" : (opt.permute ? "σ(X)" : "X"), m: R.x, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
       } else {
         out += matrix(dataSpec);
         out += matrix({ key: "WQ", name: "W<sub>Q</sub>", m: ex.WQ, rowLabels: D_LAB, edit: "WQ", cols: ["q₁", "q₂"] });
+        if (n === 8 && st === 2) {
+          var QKV_COLS = ["q₁", "q₂", "k₁", "k₂", "v₁", "v₂"], QKV_G = ["--query", "--data", "--measure"];
+          var Wqkv = ex.WQ.map(function (r, i) { return r.concat(ex.WK[i], ex.WV[i]); });
+          out += matrix({ key: "Wqkv", name: "W = [W<sub>Q</sub> | W<sub>K</sub> | W<sub>V</sub>]", m: Wqkv, rowLabels: D_LAB, cols: QKV_COLS, groups: QKV_G, groupSize: 2 });
+          out += matrix({ key: "XWqkv", name: "XW = [Q | K | V]", m: matmul(ex.data, Wqkv), rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: QKV_COLS, groups: QKV_G, groupSize: 2 });
+        }
       }
       out += matrix({ key: "Qs", name: "Q = XW<sub>Q</sub>", m: R.Q, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB, hlRows: hl7 });
       out += matrix({ key: "K", name: "K = XW<sub>K</sub>", m: R.K, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
       out += matrix({ key: "V", name: "V = XW<sub>V</sub>", m: R.V, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB });
-      var masked10 = n === 10 && opt.mask;
-      if (n !== 7 || st >= 2) {
+      var masked10 = n === 11 && opt.mask;
+      if (n !== 8 || st >= 3) {
         if (masked10 && st === 1) out += matrix({ key: "E", name: "E = QKᵀ / √D (sem máscara)", m: R.Eraw, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels });
-        else out += matrix({ key: "E", name: "E = QKᵀ / √D", m: R.E, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, mask: R.mask, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
-        if (!masked10 || st >= 3) out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, heat: true, sum: true, mask: R.mask, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
-        if (!masked10 || st >= 4) out += matrix({ key: "Y", name: "Y = AV", m: R.Y, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB, rowsShown: n === 7 ? rows7 : null, hlRows: hl7 });
+        else out += matrix({ key: "E", name: "E = QKᵀ / √D", m: R.E, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, mask: R.mask, rowsShown: n === 8 ? rows7 : null, hlRows: hl7 });
+        if (!masked10 || st >= 3) out += matrix({ key: "A", name: "A = softmax(E, dim=1)", m: R.A, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: labels, heat: true, sum: true, mask: R.mask, rowsShown: n === 8 ? rows7 : null, hlRows: hl7 });
+        if (!masked10 || st >= 4) out += matrix({ key: "Y", name: "Y = AV", m: R.Y, rowLabels: labels, rowRole: "data", rowIds: rowIds, cols: D_LAB, rowsShown: n === 8 ? rows7 : null, hlRows: hl7 });
       }
-    } else if (n === 11) {
+    } else if (n === 12) {
       out += drawGenerationMatrices(R, st);
-    } else if (n === 12 || n === 13) {
-      if (n === 12) {
-        R.heads.forEach(function (H, h) {
-          out += matrix({ key: "heads", name: "A da cabeça " + (h + 1), m: H.A, rowLabels: rl, rowRole: "data", cols: rl, heat: true, sum: true });
-        });
-        R.heads.forEach(function (H, h) {
-          out += matrix({ key: "heads", name: "Y da cabeça " + (h + 1), m: H.Y, rowLabels: rl, rowRole: "data", cols: D_LAB });
-        });
-      }
-      out += matrix({ key: "heads", name: "Y empilhado", m: R.stacked, rowLabels: rl, rowRole: "data", cols: ["c1·1", "c1·2", "c2·1", "c2·2"] });
-      out += matrix({ key: "WO", name: "W<sub>O</sub>", m: WO, rowLabels: ["c1·1", "c1·2", "c2·1", "c2·2"], cols: D_LAB });
-      out += matrix({ key: "WO", name: "O = Y W<sub>O</sub>", m: R.Y, rowLabels: rl, rowRole: "data", cols: D_LAB });
+    } else if (n === 0) {
+      out += drawAlgebraMatrices(R, st);
+    } else if (n === 2) {
+      var bx = R.box, zeros = function (r, c) { return range(r).map(function () { return range(c).map(function () { return 0; }); }); };
+      var tl = function (p, k) { return range(k).map(function (i) { return p + SUB[i]; }); };
+      var dl = function (k) { return range(k).map(function (i) { return "d" + SUB[i]; }); };
+      if (bx.cross) out += matrix({ key: "boxQ", name: "consultas", m: zeros(bx.nQ, bx.din), rowLabels: tl("q", bx.nQ), cols: dl(bx.din), rowsShown: 0 });
+      out += matrix({ key: "boxIn", name: bx.cross ? "dados X" : "entrada X", m: zeros(bx.nIn, bx.din), rowLabels: tl("x", bx.nIn), cols: dl(bx.din), rowsShown: 0 });
+      out += matrix({ key: "boxOut", name: "saída Y", m: zeros(bx.nQ, bx.dout), rowLabels: tl("y", bx.nQ), cols: dl(bx.dout), rowsShown: 0 });
+      out += "<p class=\"note\" style=\"flex-basis:100%;margin:0\">Só as formas: [" + bx.nIn + " × " + bx.din + "]" + (bx.cross ? " e [" + bx.nQ + " × " + bx.din + "]" : "") + " → [" + bx.nQ + " × " + bx.dout + "]. Os números aparecem quando a caixa for aberta, no passo 3.</p>";
+    } else if (n === 13) {
+      out += drawHeadMatrices(R, st);
     }
     document.getElementById("mats").innerHTML = out;
+  }
+
+  function drawAlgebraMatrices(R, st) {
+    var a = ex.alg, d = a.cols.length, out = "";
+    var wl = range(d).map(function (j) { return "w" + SUB[j]; }), yl = range(d).map(function (j) { return "y" + SUB[j]; });
+    if (st <= 2) {
+      var k = st === 1 ? 1 : d;
+      out += matrix({ key: "x", name: "x", m: [a.x], rowLabels: ["x"], rowRole: "query", rowIds: [0], edit: "algx", cols: D_LAB });
+      out += matrix({ key: st === 1 ? "w1" : "W", name: st === 1 ? "w₁" : "W", m: R.W.map(function (r) { return r.slice(0, k); }), rowLabels: D_LAB, edit: "algW", cols: wl.slice(0, k) });
+      out += matrix({ key: "y", name: st === 1 ? "y₁ = x · w₁" : "y = xW", m: [R.y.slice(0, k)], rowLabels: ["x"], rowRole: "query", rowIds: [0], cols: yl.slice(0, k) });
+    } else if (st === 3) {
+      var vl = range(a.v.length).map(function (j) { return "v" + SUB[j]; });
+      out += matrix({ key: "u", name: "uᵀ", m: a.u.map(function (x) { return [x]; }), rowLabels: ["u₁", "u₂"], cols: ["u"] });
+      out += matrix({ key: "v", name: "v", m: [a.v], rowLabels: ["v"], cols: vl });
+      out += matrix({ key: "outer", name: "uᵀv", m: R.outer, rowLabels: ["u₁", "u₂"], cols: vl, heat: false });
+    } else {
+      var xl = range(a.X.length).map(function (i) { return "X" + SUB[i]; });
+      out += matrix({ key: "Xs", name: "X", m: a.X, rowLabels: xl, rowRole: "query", edit: "algX", cols: D_LAB });
+      out += matrix({ key: "W", name: "W", m: R.W, rowLabels: D_LAB, edit: "algW", cols: wl });
+      out += matrix({ key: "XW", name: "XW", m: R.XW, rowLabels: xl, rowRole: "query", cols: yl });
+    }
+    return out;
+  }
+
+  function drawHeadMatrices(R, st) {
+    var rl = DATA_LABELS, HG = ["--query", "--data"], C4 = ["c1·1", "c1·2", "c2·1", "c2·2"], C2 = ["1", "2"];
+    var X4 = ["x₁", "x₂", "x₃", "x₄"];
+    var g = st >= 2 ? { groups: HG, groupSize: 2 } : {};
+    function m(spec) { for (var k in g) if (spec.cols === C4) spec[k] = g[k]; return matrix(spec); }
+    var inp = matrix({ key: "mhX", name: "X", m: MH.X, rowLabels: rl, rowRole: "data", cols: X4 }) +
+      m({ key: "mhQ", name: "Q = XW<sub>Q</sub>", m: R.Q, rowLabels: rl, rowRole: "data", cols: C4 }) +
+      m({ key: "mhK", name: "K = XW<sub>K</sub>", m: R.K, rowLabels: rl, rowRole: "data", cols: C4 }) +
+      m({ key: "mhV", name: "V = XW<sub>V</sub>", m: R.V, rowLabels: rl, rowRole: "data", cols: C4 });
+    // a partir da etapa 3, Q, K e V aparecem só fatiados, nos blocos de cada cabeça
+    var out = st <= 2 ? block(st === 2 ? "Q, K e V (cores: as fatias de cada cabeça)" : "Entrada e projeções, D = 4", inp) : "";
+    if (st >= 2 && st <= 4) {
+      R.heads.forEach(function (H, h) {
+        var hb = "";
+        ["Q", "K", "V"].forEach(function (nm) { hb += matrix({ key: "slice", name: nm + SUB[h], m: H[nm], rowLabels: rl, rowRole: "data", cols: C2 }); });
+        if (st >= 3) hb += matrix({ key: "mhA", name: "A" + SUB[h] + " = softmax(Q" + SUB[h] + "K" + SUB[h] + "ᵀ/√2)", m: H.A, rowLabels: rl, rowRole: "data", cols: rl, heat: true, sum: true });
+        if (st >= 4) hb += matrix({ key: "mhY", name: "Y" + SUB[h] + " = A" + SUB[h] + "V" + SUB[h], m: H.Y, rowLabels: rl, rowRole: "data", cols: C2 });
+        out += block("Cabeça " + (h + 1) + " · colunas " + (2 * h + 1) + "-" + (2 * h + 2), hb);
+      });
+    }
+    if (st === 5) {
+      var cb = "";
+      R.heads.forEach(function (H, h) { cb += matrix({ key: "mhA", name: "A" + SUB[h], m: H.A, rowLabels: rl, rowRole: "data", cols: rl, heat: true, sum: true }); });
+      cb += matrix({ key: "concat", name: "[Y₁ | Y₂]", m: R.concat, rowLabels: rl, rowRole: "data", cols: C4, groups: HG, groupSize: 2 });
+      cb += matrix({ key: "WO", name: "W<sub>O</sub>", m: MH.WO, rowLabels: C4, cols: X4 });
+      cb += matrix({ key: "O", name: "O = [Y₁ | Y₂]W<sub>O</sub>", m: R.Y, rowLabels: rl, rowRole: "data", cols: X4 });
+      out += block("Concatenar e misturar", cb);
+    }
+    return out;
   }
 
   function drawGenerationMatrices(R, st) {
@@ -1499,7 +1698,22 @@
     if (stageCount(n) > 1) {
       c += "<button type=\"button\" class=\"btn\" id=\"playBtn\" title=\"Reproduzir as etapas (P)\">" + (state.playing ? "⏸ Parar" : "▶ Reproduzir") + "</button>";
     }
-    if (n === 3) {
+    if (n === 0 && state.stage === 2) {
+      var d0 = ex.alg.cols.length;
+      c += "<button type=\"button\" class=\"btn\" data-alg=\"add\"" + (d0 >= ALG_MAX ? " disabled" : "") + ">+ combinação</button>";
+      c += "<button type=\"button\" class=\"btn\" data-alg=\"remove\"" + (d0 <= 1 ? " disabled" : "") + ">− combinação</button>";
+      c += control("d<sub>out</sub> = <b id=\"algDout\">" + d0 + "</b> (1 a " + ALG_MAX + ")");
+    }
+    if (n === 2) {
+      var num6 = function (name, label, lo) {
+        return control("<label>" + label + " <input type=\"number\" min=\"" + lo + "\" max=\"6\" value=\"" + opt[name] + "\" data-opt=\"" + name + "\" style=\"width:3.5em\"></label>");
+      };
+      c += control("<label>Tipo <select data-opt=\"boxType\"><option value=\"self\"" + (opt.boxType === "self" ? " selected" : "") + ">self-attention</option><option value=\"cross\"" + (opt.boxType === "cross" ? " selected" : "") + ">cross-attention</option></select></label>");
+      if (opt.boxType === "cross") c += num6("boxNQ", "N<sub>Q</sub>", 2) + num6("boxNX", "N<sub>X</sub>", 2);
+      else c += num6("boxN", "N", 2);
+      c += num6("boxDin", "d<sub>in</sub>", 1) + num6("boxDout", "d<sub>out</sub>", 1);
+    }
+    if (n === 4) {
       c += control("<label>Esticar ×<input type=\"range\" min=\"1\" max=\"5\" step=\"0.5\" value=\"" + opt.stretch + "\" data-opt=\"stretch\"><output>" + opt.stretch + "</output></label>");
       c += control("<label><input type=\"checkbox\" data-opt=\"scale\"" + (opt.scale ? " checked" : "") + "> dividir por √D</label>");
       var sat = saturation(opt.D);
@@ -1511,24 +1725,24 @@
         "<tr><th>com escala</th><td>" + sat.scaled.largest.toFixed(3) + "</td><td>" + sat.scaled.grad.toFixed(5) + "</td></tr></table></div>" +
         "Sem a escala, o maior peso tende a 1 e o gradiente a 0 quando <i>D</i> cresce.</div>";
     }
-    if (n === 5 && state.stage >= 3) c += geoSelect();
-    if (n === 6) {
+    if (n === 6 && state.stage >= 3) c += geoSelect();
+    if (n === 7) {
       c += viewToggle();
       if (opt.view === "vetores") c += geoSelect();
       var best = R.A.map(function (row, i) { var j = argmax(row); return "<b class=\"role-query\">" + QUERY_PLOT[i] + "</b> → <b class=\"role-data\">" + DATA_LABELS[j] + "</b> (" + row[j].toFixed(2) + ")"; });
       extra += "<p class=\"note\">Maior peso de cada consulta: " + best.join(" · ") + ". <i>Vediamo</i> quer dizer “nós vemos”: o peso se divide entre <i>see</i> (" + fmt(R.A[0][1]) + ") e <i>we</i> (" + fmt(R.A[0][0]) + "), porque a atenção é uma mistura, não a escolha de uma única palavra. Os pesos não foram treinados: as traduções vêm de como o exemplo foi escolhido.</p>";
     }
-    if (n === 7) {
+    if (n === 8) {
       c += viewToggle();
       c += control("<label>Exemplo <select data-opt=\"example\"><option value=\"traducao\"" + (opt.example === "traducao" ? " selected" : "") + ">we see the sky</option><option value=\"pronome\"" + (opt.example === "pronome" ? " selected" : "") + ">o animal… ele…</option></select></label>");
     }
-    if (n === 8 || n === 9) {
-      c += "<span class=\"" + (n === 8 ? "is-new" : "") + "\" style=\"padding:0.2rem\"><label><input type=\"checkbox\" data-opt=\"permute\"" + (opt.permute ? " checked" : "") + "> permutar a entrada (the, we, sky, see)</label></span>";
+    if (n === 9 || n === 10) {
+      c += "<span class=\"" + (n === 9 ? "is-new" : "") + "\" style=\"padding:0.2rem\"><label><input type=\"checkbox\" data-opt=\"permute\"" + (opt.permute ? " checked" : "") + "> permutar a entrada (the, we, sky, see)</label></span>";
     }
-    if (n === 9) {
+    if (n === 10) {
       c += control("<label><input type=\"checkbox\" data-opt=\"positions\"" + (opt.positions ? " checked" : "") + "> somar a posição P</label>");
     }
-    if (n === 8 || n === 9) {
+    if (n === 9 || n === 10) {
       if (opt.permute) {
         var same = true;
         var saved = opt.permute; opt.permute = false; var plain = compute(n); opt.permute = saved;
@@ -1542,17 +1756,18 @@
         extra += "<p class=\"note\">Marque “permutar” e compare a saída de cada palavra.</p>";
       }
     }
-    if (n === 10) {
+    if (n === 11) {
       c += "<span style=\"padding:0.2rem\"><label><input type=\"checkbox\" data-opt=\"mask\"" + (opt.mask ? " checked" : "") + "> máscara causal</label></span>";
     }
-    if (n === 11) {
+    if (n === 12) {
       extra += "<p class=\"note\">Simplificações: as saídas do encoder são os próprios vetores <i>X</i>; o decoder tem uma camada, com os mesmos <i>W<sub>Q</sub></i>, <i>W<sub>K</sub></i> e <i>W<sub>V</sub></i> dos passos anteriores; e a escolha da palavra (projeção para o vocabulário) não é calculada: a sequência gerada é a tradução correta.</p>";
     }
-    if (n === 12) {
-      c += control("<label>Cabeça no gráfico <select data-opt=\"head\"><option value=\"0\"" + (opt.head === 0 ? " selected" : "") + ">1</option><option value=\"1\"" + (opt.head === 1 ? " selected" : "") + ">2</option></select></label>");
-      extra += "<p class=\"note\">Aqui cada cabeça tem <i>D<sub>H</sub></i> = 2, e as saídas empilhadas têm <i>HD<sub>H</sub></i> = 4 dimensões. <i>W<sub>O</sub></i> faz a média das duas cabeças.</p>";
-    }
     if (n === 13) {
+      c += control("<label>Cabeça no gráfico <select data-opt=\"head\"><option value=\"0\"" + (opt.head === 0 ? " selected" : "") + ">1</option><option value=\"1\"" + (opt.head === 1 ? " selected" : "") + ">2</option></select></label>");
+      extra += "<p class=\"note\">Aqui <i>D</i> = 4 e <i>H</i> = 2: cada cabeça trabalha numa fatia de <i>D<sub>H</sub></i> = <i>D</i>/<i>H</i> = 2 colunas de <i>Q</i>, <i>K</i> e <i>V</i>, e o gráfico mostra essa fatia para a cabeça escolhida. Os vetores têm 4 dimensões, por isso não há arrasto neste passo.</p>";
+    }
+    if (n === 14) {
+      c += control("<label>Cabeça no gráfico <select data-opt=\"head\"><option value=\"0\"" + (opt.head === 0 ? " selected" : "") + ">1</option><option value=\"1\"" + (opt.head === 1 ? " selected" : "") + ">2</option></select></label>");
       var N = opt.N, Dm = opt.Dm, H = opt.H, DH = Dm / H;
       var DHs = Number.isInteger(DH) ? DH : DH.toFixed(2);
       c += control("<label>N <input type=\"number\" min=\"1\" max=\"100000\" value=\"" + N + "\" data-opt=\"N\" style=\"width:6em\"></label>");
@@ -1566,10 +1781,10 @@
       ];
       document.getElementById("mats").innerHTML = "<div class=\"mat is-new\" data-mat=\"shapes\" style=\"width:100%\"><div class=\"mat-name\">As quatro multiplicações <span class=\"is-new-tag\">novo</span></div><div class=\"stat mat-scroll\"><table>" +
         rows.map(function (r) { return "<tr><th style=\"text-align:left\">" + r[0] + "</th><td style=\"text-align:left;white-space:nowrap\">" + r[1] + "</td><td style=\"text-align:left;font-family:var(--font-body);font-size:0.85rem\">" + r[2] + "</td></tr>"; }).join("") +
-        "</table></div><p class=\"note\">Na prática, cada cabeça tem <i>D<sub>H</sub> = D/H</i>" + (Number.isInteger(DH) ? "" : " — escolha <i>D</i> divisível por <i>H</i>") + ". O exemplo do passo 12 usa <i>D<sub>H</sub></i> = 2 com <i>D</i> = 2, para que cada cabeça caiba no gráfico; as formas acima seguem a regra usual.</p></div>" +
+        "</table></div><p class=\"note\">Na prática, cada cabeça tem <i>D<sub>H</sub> = D/H</i>" + (Number.isInteger(DH) ? "" : " — escolha <i>D</i> divisível por <i>H</i>") + ". O exemplo do passo 13 segue essa regra: <i>D</i> = 4 e <i>H</i> = 2 dão <i>D<sub>H</sub></i> = 2, e cada cabeça cabe no gráfico.</p></div>" +
         document.getElementById("mats").innerHTML;
     }
-    if (n === 14) {
+    if (n === 15) {
       c = "";
       var mb = opt.memH * opt.memN * opt.memN * opt.bytes;
       document.getElementById("mats").innerHTML =
@@ -1592,25 +1807,29 @@
   function handItems(n, R) {
     var X = ex.data, q = ex.queries;
     switch (n) {
-      case 2: return [
+      case 0: return [
+        ["y₂ = x · w₂ = " + vn(ex.alg.x) + " · " + vn(ex.alg.cols[Math.min(1, ex.alg.cols.length - 1)]), num(R.y[Math.min(1, R.y.length - 1)])],
+        ["Primeira linha de XW: X₁W, com X₁ = " + vn(ex.alg.X[0]), vn(R.XW[0])]];
+      case 3: return [
         ["Similaridade de <i>q</i> com <i>we</i>: e₁ = " + v2(q[2]) + " · " + v2(X[0]), fmt(R.E[0][0])],
         ["Peso de <i>sky</i>: a₄ = exp(e₄) / Σ exp(eᵢ)", fmt(R.A[0][3])],
         ["Saída y = Σ aᵢXᵢ", v2(R.Y[0])]];
-      case 3: return [
+      case 4: return [
         ["Similaridade com <i>sky</i> sem a escala, com os vetores esticados ×" + opt.stretch, fmt(R.E[0][3] * (opt.scale ? Math.sqrt(2) : 1))],
         ["A mesma similaridade dividida por √2", fmt(R.E[0][3] / (opt.scale ? 1 : Math.sqrt(2)))]];
-      case 4: return [["Linha de <i>A</i> para <i>q₂</i> (il)", R.A[1].map(fmt).join("; ")]];
-      case 5: return [
+      case 5: return [["Linha de <i>A</i> para <i>q₂</i> (il)", R.A[1].map(fmt).join("; ")]];
+      case 6: return [
         ["Chave de <i>sky</i>: K₄ = X₄W<sub>K</sub>", v2(R.K[3])],
         ["Valor de <i>sky</i>: V₄ = X₄W<sub>V</sub>", v2(R.V[3])]];
-      case 7: return opt.example === "pronome" ? [["Peso de <i>ele</i> em <i>animal</i>", fmt(R.A[PRON_ELE][1])]] : [["Linha de <i>A</i> para <i>see</i>", R.A[1].map(fmt).join("; ")]];
-      case 9: return opt.positions ? [["Entrada de <i>" + DATA_LABELS[R.order[1]] + "</i> na posição t = 1: X + (sin 1, cos 1)", v2(R.x[1])]] : [["Entrada na posição 1, sem P", v2(R.x[1])]];
-      case 10: return [["Linha de <i>A</i> para <i>the</i>" + (opt.mask ? " com máscara" : ""), R.A[2].map(fmt).join("; ")]];
-      case 11: return [
+      case 8: return opt.example === "pronome" ? [["Peso de <i>ele</i> em <i>animal</i>", fmt(R.A[PRON_ELE][1])]] : [["Linha de <i>A</i> para <i>see</i>", R.A[1].map(fmt).join("; ")]];
+      case 10: return opt.positions ? [["Entrada de <i>" + DATA_LABELS[R.order[1]] + "</i> na posição t = 1: X + (sin 1, cos 1)", v2(R.x[1])]] : [["Entrada na posição 1, sem P", v2(R.x[1])]];
+      case 11: return [["Linha de <i>A</i> para <i>the</i>" + (opt.mask ? " com máscara" : ""), R.A[2].map(fmt).join("; ")]];
+      case 12: return [
         ["Peso da cross-attention de q₃ (gerando <i>cielo</i>) em <i>sky</i>", fmt(R.crossA[2][3])],
         ["Linha 2 da self-attention do decoder (gerando <i>il</i>)", R.selfA[1].slice(0, 2).map(fmt).join("; ")]];
-      case 13: return [["Forma de <i>A</i> para N = " + opt.N + " e H = " + opt.H, "[" + opt.H + " × " + opt.N + " × " + opt.N + "]"]];
-      case 14: return [["Memória de A para N = 10.000, H = 12, 2 bytes", fmtBytes(12 * 1e8 * 2)]];
+      case 13: return [["Linha de A₁ para <i>we</i> (cabeça 1)", R.heads[0].A[0].map(fmt).join("; ")]];
+      case 14: return [["Forma de <i>A</i> para N = " + opt.N + " e H = " + opt.H, "[" + opt.H + " × " + opt.N + " × " + opt.N + "]"]];
+      case 15: return [["Memória de A para N = 10.000, H = 12, 2 bytes", fmtBytes(12 * 1e8 * 2)]];
       default: return null;
     }
   }
@@ -1641,21 +1860,22 @@
       return words.map(function (w, i) { return "<span class=\"tok " + role + (on.indexOf(i) >= 0 ? " on" : "") + "\">" + w + "</span>"; }).join(" ");
     }
     var st = state.stage;
-    if (n >= 14) return "";
+    if (n >= 15 || n === 0) return "";
     var pair = function (on) {
       return "<span class=\"lang\">Inglês (encoder)</span> " + toks(DATA_LABELS, "data", []) +
         " <span class=\"arrow\">→</span> <span class=\"lang\">Italiano (decoder)</span> " + toks(QUERY_LABELS, "query", on);
     };
-    if (n === 11) return pair(st >= 2 && st <= 4 ? [st - 2] : st === 5 ? [0, 1, 2] : []);
-    if (n >= 7) {
-      var words = n === 7 && opt.example === "pronome" ? PRON_LABELS : DATA_LABELS;
+    if (n === 2) return pair([]) + "<p class=\"gloss\">No exemplo da tradução, a cross-attention recebe 3 consultas (as palavras italianas a gerar) e 4 dados (as palavras inglesas) e devolve 3 vetores; a self-attention sobre a frase em inglês recebe 4 vetores e devolve 4.</p>";
+    if (n === 12) return pair(st >= 2 && st <= 4 ? [st - 2] : st === 5 ? [0, 1, 2] : []);
+    if (n >= 8) {
+      var words = n === 8 && opt.example === "pronome" ? PRON_LABELS : DATA_LABELS;
       return "<span class=\"lang\">Exemplo</span> " + toks(words, "data", []) +
         "<p class=\"gloss\">Agora há uma só sequência: cada vetor representa uma palavra e é comparado com todas as outras da mesma frase.</p>";
     }
-    var on = n === 1 ? [0] : n <= 3 ? [2] : [0, 1, 2];
+    var on = n === 1 ? [0] : n <= 4 ? [2] : [0, 1, 2];
     var gloss = n === 1
       ? "O encoder leu a frase em inglês e guardou um estado <i>hᵢ</i> por palavra. O decoder, no estado <i>s₀</i>, vai gerar a primeira palavra da tradução."
-      : n <= 3
+      : n <= 4
       ? "A camada aceita qualquer vetor como consulta: embeddings, regiões de uma imagem, saídas de outra camada. Neste exemplo, <i>q</i> faz o papel do estado do decoder ao gerar <i>cielo</i>, e cada <i>Xᵢ</i> o do estado do encoder em uma palavra inglesa."
       : "No exemplo, <i>q₁</i>, <i>q₂</i> e <i>q₃</i> fazem o papel dos estados do decoder ao gerar <i>vediamo</i>, <i>il</i> e <i>cielo</i>.";
     return pair(on) + "<p class=\"gloss\">" + gloss + "</p>";
@@ -1668,7 +1888,7 @@
   function words(s) { return s.split(" "); }
   var EXAMPLES = {
     cross: {
-      title: "Cross-attention: a palavra a gerar olha a frase de origem", steps: [6],
+      title: "Cross-attention: a palavra a gerar olha a frase de origem", steps: [7],
       cards: [
         { rows: [{ lang: "italiano", w: words("vediamo il cielo") }, { lang: "inglês", w: words("we see the sky") }],
           focus: [0, 0], clues: [[1, 0], [1, 1]],
@@ -1681,7 +1901,7 @@
           why: "A ordem muda: a terceira palavra em português olha para a segunda em inglês. A atenção não depende da posição." }
       ] },
     enc: {
-      title: "Self-attention no encoder: a palavra busca na própria frase o que lhe falta", steps: [7],
+      title: "Self-attention no encoder: a palavra busca na própria frase o que lhe falta", steps: [8],
       cards: [
         { rows: [{ lang: "inglês", w: words("the sky") }], focus: [0, 0], clues: [[0, 1]],
           tr: "<b>il</b> cielo &nbsp;·&nbsp; compare: the moon → <b>la</b> luna",
@@ -1708,8 +1928,19 @@
           tr: "os carros <b>vermelhos</b>",
           why: "O adjetivo concorda em número e gênero com o substantivo, e ainda muda de posição." }
       ] },
+    ordem: {
+      title: "A ordem muda o sentido", steps: [9, 10], pairs: true,
+      warn: "Sem a posição, a self-attention dá a mesma saída para cada palavra nas duas frases: para ela, são o mesmo conjunto de palavras.",
+      cards: [
+        { rows: [{ lang: "frase A", w: words("o cachorro mordeu o homem") }, { lang: "frase B", w: words("o homem mordeu o cachorro") }],
+          moved: [[1, 4], [1, 4]], why: "Quem morde e quem é mordido depende só da ordem." },
+        { rows: [{ lang: "frase A", w: words("ela não disse que gostou") }, { lang: "frase B", w: words("ela disse que não gostou") }],
+          moved: [[1], [3]], why: "A posição do <i>não</i> muda o que é negado: o dizer ou o gostar." },
+        { rows: [{ lang: "frase A", w: words("só ele viu o filme") }, { lang: "frase B", w: words("ele só viu o filme") }],
+          moved: [[0], [1]], why: "<i>Só</i> muda de alcance conforme a posição: ninguém mais viu, ou ele não fez mais nada." }
+      ] },
     dec: {
-      title: "Self-attention no decoder: a palavra a gerar olha o que já foi gerado", steps: [10, 11],
+      title: "Self-attention no decoder: a palavra a gerar olha o que já foi gerado", steps: [11, 12],
       cards: [
         { rows: [{ lang: "italiano", w: words("il cielo è azzurro") }, { lang: "inglês", w: words("the sky is blue") }],
           focus: [0, 3], clues: [[0, 1]],
@@ -1722,7 +1953,7 @@
           why: "Ao gerar <i>il</i>, o decoder ainda não vê <i>cielo</i> (máscara). A informação vem da origem: graças à self-attention do encoder, <i>the</i> já carrega o gênero de <i>sky</i>." }
       ] }
   };
-  var EX_ORDER = ["cross", "enc", "dec"];
+  var EX_ORDER = ["cross", "enc", "ordem", "dec"];
   var exState = { open: false, groups: [], revealed: [] };
 
   function exGroupFor(n) {
@@ -1740,6 +1971,8 @@
     exState.groups = all || !g ? EX_ORDER.slice() : [g];
     exState.revealed = exCards().map(function () { return false; });
     exState.open = true;
+    // os cartões de ordem não têm setas
+    document.querySelector("#examples .ex-disclaimer").hidden = exState.groups.length === 1 && exState.groups[0] === "ordem";
     renderExamples();
     var panel = document.getElementById("examples");
     panel.hidden = false;
@@ -1771,18 +2004,23 @@
   function renderExamples() {
     var cards = exCards(), out = "", lastGroup = null;
     cards.forEach(function (it, k) {
-      if (it.g !== lastGroup) { out += "<h3 class=\"ex-group\">" + EXAMPLES[it.g].title + "</h3>"; lastGroup = it.g; }
+      if (it.g !== lastGroup) {
+        out += "<h3 class=\"ex-group\">" + EXAMPLES[it.g].title + "</h3>";
+        if (EXAMPLES[it.g].warn) out += "<p class=\"ex-warn\">" + EXAMPLES[it.g].warn + "</p>";
+        lastGroup = it.g;
+      }
       var c = it.c, open = exState.revealed[k];
-      var fw = c.rows[c.focus[0]].w[c.focus[1]];
       out += "<article class=\"ex-card" + (open ? " open" : "") + "\" data-card=\"" + k + "\">";
-      out += "<p class=\"ex-q\">" + (c.rows.length > 1 ? "Para gerar" : "Para traduzir") + " <b>" + fw + "</b>, de qual palavra ela precisa?</p>";
+      if (c.moved) out += "<p class=\"ex-q\">As duas frases têm as mesmas palavras. Dizem a mesma coisa?</p>";
+      else out += "<p class=\"ex-q\">" + (c.rows.length > 1 ? "Para gerar" : "Para traduzir") + " <b>" + c.rows[c.focus[0]].w[c.focus[1]] + "</b>, de qual palavra ela precisa?</p>";
       out += "<div class=\"ex-sent" + (c.rows.length > 1 ? " two" : "") + "\">";
       c.rows.forEach(function (row, r) {
         out += "<div class=\"ex-row\"><span class=\"ex-lang\">" + row.lang + "</span>";
         row.w.forEach(function (w, i) {
           var cls = "ex-tok";
-          if (r === c.focus[0] && i === c.focus[1]) cls += " focus";
-          if (open && c.clues.some(function (q) { return q[0] === r && q[1] === i; })) cls += " clue";
+          if (c.focus && r === c.focus[0] && i === c.focus[1]) cls += " focus";
+          if (open && c.clues && c.clues.some(function (q) { return q[0] === r && q[1] === i; })) cls += " clue";
+          if (open && c.moved && c.moved[r].indexOf(i) >= 0) cls += " clue";
           if (c.future != null && r === 0 && i >= c.future) cls += " future";
           out += "<span class=\"" + cls + "\" data-r=\"" + r + "\" data-i=\"" + i + "\">" + w + "</span>";
         });
@@ -1808,7 +2046,7 @@
       var k = +el.getAttribute("data-card"), c = cards[k].c;
       var svgEl = el.querySelector(".ex-arrows");
       svgEl.innerHTML = "";
-      if (!exState.revealed[k]) return;
+      if (!exState.revealed[k] || !c.clues) return;
       var box = el.querySelector(".ex-sent").getBoundingClientRect();
       if (!box.width) return;
       svgEl.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
@@ -1853,11 +2091,11 @@
     var R = compute(n);
     newKeys = stageNew(n);
     if (stepChanged !== false) {
-      document.getElementById("stepMeta").textContent = "Passo " + n + " de " + TOTAL + " · " + (S.slides === "complemento" ? "complemento" : "slides " + S.slides);
+      document.getElementById("stepMeta").textContent = "Passo " + n + " de " + TOTAL + " · " + (/\d/.test(S.slides) ? "slides " + S.slides : S.slides);
       document.getElementById("stepTitle").textContent = S.title;
       document.getElementById("stepText").innerHTML = S.text;
       var exBtn = exGroupFor(n) ? "<button type=\"button\" class=\"btn ex-btn\" id=\"exBtn\" title=\"Exemplos na linguagem (L)\">Exemplos na linguagem</button>" : "";
-      var note = S.note ? "<details class=\"more\"><summary>" + S.note.q + "</summary><div>" + S.note.a + "</div></details>" : "";
+      var note = (S.note ? [].concat(S.note) : []).map(function (nt) { return "<details class=\"more\"><summary>" + nt.q + "</summary><div>" + nt.a + "</div></details>"; }).join("");
       document.getElementById("noteBox").innerHTML = exBtn || note ? "<div class=\"note-row\">" + note + exBtn + "</div>" : "";
       stepSelect.value = String(n);
     }
@@ -1867,7 +2105,7 @@
     var sc = document.getElementById("stageCounter");
     sc.textContent = count > 1 ? "etapa " + state.stage + " de " + count : "";
     sc.hidden = count <= 1;
-    document.getElementById("prevBtn").disabled = n === 1 && state.stage === 1;
+    document.getElementById("prevBtn").disabled = n === 0 && state.stage === 1;
     document.getElementById("nextBtn").disabled = n === TOTAL && state.stage === count;
     drawPlot(n, R);
     var active = document.activeElement;
@@ -1882,7 +2120,7 @@
 
   /* ---------- navegação por passos e etapas (data-model, "Etapa") ---------- */
   function goTo(n, stage) {
-    n = Math.max(1, Math.min(TOTAL, n | 0));
+    n = Math.max(0, Math.min(TOTAL, n | 0));
     if (exState.open) closeExamples();
     if (n !== state.step) { state.revealed = false; state.highlight = null; }
     stopPlay();
@@ -1900,22 +2138,24 @@
   function prev() {
     stopPlay();
     if (state.stage > 1) { state.stage--; render(false); }
-    else if (state.step > 1) goTo(state.step - 1);
+    else if (state.step > 0) goTo(state.step - 1);
   }
   function fromHash() {
     if (location.hash === "#exemplos") {
-      if (!state.step) { state.step = 1; state.stage = stageCount(1); render(true); }
+      if (state.step < 0) { state.step = 0; state.stage = 1; render(true); }
       openExamples(true);
       return;
     }
     var m = /^#passo-(\d+)$/.exec(location.hash);
-    var n = m ? +m[1] : 1;
-    if (!(n >= 1 && n <= TOTAL)) n = 1;
+    // sem hash (ou com hash inválido), a página abre no começo: passo 0, etapa 1
+    var n = m ? +m[1] : 0;
+    var valid = m && n >= 0 && n <= TOTAL;
+    if (!valid) n = 0;
     if (n === state.step) return;
     state.revealed = false; state.highlight = null;
     stopPlay();
     state.step = n;
-    state.stage = stageCount(n);
+    state.stage = valid ? stageCount(n) : 1;
     render(true);
   }
 
@@ -2003,7 +2243,7 @@
       case "PageDown": case "ArrowDown": next(); break;
       case "PageUp": case "ArrowUp": prev(); break;
       case " ": if (onControl) return; next(); break;
-      case "Home": goTo(1); break;
+      case "Home": goTo(0, 1); break;
       case "End": goTo(TOTAL); break;
       case "f": case "F": toggleFull(); break;
       case "r": case "R": reset(); break;
@@ -2018,6 +2258,16 @@
     var el = evt.target && evt.target.closest ? evt.target : null;
     if (el && el.closest("#playBtn")) { togglePlay(); return; }
     if (el && el.closest("#exBtn")) { openExamples(false); return; }
+    var ab = el && el.closest("[data-alg]");
+    if (ab && !ab.disabled) {
+      var cols = ex.alg.cols;
+      if (ab.getAttribute("data-alg") === "add" && cols.length < ALG_MAX) cols.push(ALG_NEW.slice());
+      if (ab.getAttribute("data-alg") === "remove" && cols.length > 1) cols.pop();
+      stopPlay(); render(false);
+      var again = document.querySelector("[data-alg=\"" + ab.getAttribute("data-alg") + "\"]");
+      if (again) again.focus();
+      return;
+    }
     if (state.playing) { stopPlay(); render(false); }
     var v = el && el.closest("[data-view]");
     if (v) setOption("view", v.getAttribute("data-view"));
@@ -2026,6 +2276,7 @@
   function setOption(name, value) {
     if (["permute", "positions", "mask", "scale"].indexOf(name) >= 0) opt[name] = !!value;
     else if (name === "geo" || name === "view") opt[name] = String(value);
+    else if (name === "boxType") opt.boxType = value === "cross" ? "cross" : "self";
     else if (name === "example") { opt.example = value === "pronome" ? "pronome" : "traducao"; state.highlight = null; }
     else {
       var v = +value;
@@ -2035,6 +2286,8 @@
       if (name === "Dm") v = Math.max(1, Math.min(16384, Math.round(v)));
       if (name === "H" || name === "memH") v = Math.max(1, Math.min(1024, Math.round(v)));
       if (name === "stretch") v = Math.max(1, Math.min(5, v));
+      if (name === "boxN" || name === "boxNQ" || name === "boxNX") v = Math.max(2, Math.min(6, Math.round(v)));
+      if (name === "boxDin" || name === "boxDout") v = Math.max(1, Math.min(6, Math.round(v)));
       opt[name] = v;
     }
     stopPlay();
@@ -2054,6 +2307,9 @@
       else if (p[0] === "queries") ex.queries[+p[1]][+p[2]] = v;
       else if (p[0] === "query2") ex.queries[2][+p[2]] = v;
       else if (p[0] === "s0") ex.s0[+p[2]] = v;
+      else if (p[0] === "algx") ex.alg.x[+p[2]] = v;
+      else if (p[0] === "algX") ex.alg.X[+p[1]][+p[2]] = v;
+      else if (p[0] === "algW") ex.alg.cols[+p[2]][+p[1]] = v;
       else ex[p[0]][+p[1]][+p[2]] = v;
       render(false);
     }
@@ -2095,7 +2351,7 @@
     results: function () {
       var R = compute(state.step);
       var out = {};
-      ["E", "A", "Y", "K", "V", "A2", "memoryBytes", "Kenc", "Venc", "Z", "Kdec", "Vdec", "selfA", "U", "Qc", "crossA", "C"].forEach(function (k) { if (R[k] !== undefined) out[k] = R[k]; });
+      ["E", "A", "Y", "Q", "K", "V", "A2", "heads", "concat", "y", "outer", "XW", "box", "memoryBytes", "Kenc", "Venc", "Z", "Kdec", "Vdec", "selfA", "U", "Qc", "crossA", "C"].forEach(function (k) { if (R[k] !== undefined) out[k] = R[k]; });
       if (R.E) out.E = noInf(R.E);
       if (R.selfE) out.selfE = noInf(R.selfE);
       out.order = R.order;
@@ -2111,6 +2367,8 @@
       else if (role === "s0") ex.s0 = v;
       else if (role === "pron") ex.pron[i] = v;
       else if (role === "Z") ex.Z[i] = v;
+      else if (role === "algx") ex.alg.x = v;
+      else if (role === "algcol") ex.alg.cols[i] = v;
       render(false);
     },
     setOption: setOption,
